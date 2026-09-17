@@ -1,3 +1,102 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-hellogggggg
+# Glimmer — Product Backlog
+
+## User Stories
+
+### Story 1 — Low-effort capture
+As someone who wants to reflect but finds typing tedious after a long day, I want to log an entry with minimal typing, so my own laziness doesn't stop me from doing it.
+
+**Acceptance criteria**
+- Given I open a new entry, when I want to complete it, then I can do so using taps/selections alone, no required free-text.
+- Given I have under 30 seconds, when I log an entry, then I can save a complete one in under 60 seconds.
+- Given I complete an entry, when I save it, then at least one piece of structured input (mood tap, tag, or similar) was recorded — not nothing.
+- *Negative:* Given I've entered zero signal of any kind, when I try to save, then the entry is not accepted as complete.
+
+**Evidence:** Subject 1, Q2 — "im just lazy to bring out my phone and type words in a app somewhere"
+
+### Story 2 — Survives busy weeks
+As a student with heavy deadline weeks, I want the app to stay usable when I'm slammed, so deadline crunch isn't what kills the habit.
+
+**Acceptance criteria**
+- Given a busy week, when I open the app with 20 seconds free, then I can log a complete entry in that time.
+- Given I skip several days, when I return, then nothing is reset or locked.
+- *Negative:* Given I've missed 5 days, when I open the app, then I am not shown a "streak broken" penalty screen.
+
+**Evidence:** Subject 1, Q3 — "i fall off when life gets busy, its not convinient... deadlines for classes and internships"
+
+### Story 3 — Browse past entries
+As someone who wants to look back on this period of my life years from now, I want to browse past entries by date, so I can revisit those moments later.
+
+**Acceptance criteria**
+- Given I have past entries, when I open history, then they're listed reverse-chronologically.
+- Given I tap a specific date, when an entry exists, then I see its full content.
+- *Negative:* Given a date has no entry, when I tap it, then I see a clear "no entry" state, not a blank crash.
+
+**Evidence:** Subject 1, Q2 — "i want to do more of it... to reflect but also capture the moemtns"; own logged behavior — wanting to look back "10 years later"
+
+### Story 4 — Compete with the scroll, not against it
+As someone who scrolls right up until falling asleep, I want reflection to fit into that same bedtime moment, so it replaces scrolling instead of competing with it.
+
+**Acceptance criteria**
+- Given it's near typical bedtime, when I open the app, then the entry flow starts in one tap.
+- Given I finish an entry at bedtime, when I'm done, then the app doesn't push me into more screens.
+- *Negative:* Given I expect a quick entry, when the flow needs more than 2 screens before I can log anything, then that's a failure of this story.
+
+**Evidence:** Subject 2, Q1 — "scoll on my phone than went to sleep"; own logged behavior — doomscrolling on bed before sleeping around 2am
+
+### Story 5 — Capture planning as it happens, not just at night
+As someone who plans for tomorrow throughout the day rather than at one set time, I want to jot down tasks whenever they occur to me, so my existing habit gets recorded instead of staying in my head.
+
+**Acceptance criteria**
+- Given I'm anywhere in the app, when I want to note a task, then I can add it without opening a full end-of-day entry.
+- Given I've added tasks throughout the day, when I open the app the next day, then those tasks show automatically.
+- *Negative:* Given I add no tasks all day, when the day ends, then nothing is flagged as missing or incomplete.
+
+**Evidence:** Subject 2, Q2 — "i think i do think about what i need to do tommorow"; own logged behavior — "i plan and stuff all throughout the day"
+
+### Story 6 — Reflection gets crowded out, not rejected
+As someone who wants to reflect but rarely finds the time, I want a prompt at a natural pause point in my day, so reflection actually happens instead of getting crowded out.
+
+**Acceptance criteria**
+- Given I've set a reminder time, when that time arrives, then I get a prompt to reflect.
+- Given I dismiss one prompt, when the next scheduled one arrives, then it still fires normally.
+- *Negative:* Given I've set no reminder, when the day ends, then I don't get an unsolicited prompt.
+
+**Evidence:** Subject 2, Q2 — "i dont really think back on my day becuse i never get a chance to"; own logged behavior — reflection frequency dropped once school picked up
+
+### Story 7 — Skepticism has to be overcome fast
+As a first-time user who doubts this kind of app is helpful, I want to see clear value within my first use, so I don't dismiss it before giving it a real chance.
+
+**Acceptance criteria**
+- Given I open the app for the first time, when I complete my first entry, then I see a tangible payoff immediately, not an empty state.
+- Given I finish onboarding, when I reach the first entry screen, then I've been shown — not just told — what a completed entry looks like.
+- *Negative:* Given I skip onboarding entirely, when I reach the first entry screen, then I can still complete an entry without needing what I skipped.
+
+**Evidence:** Subject 2, Q3 — "i dont think its helpful... sounds not intertsing to me"
+
+### Story 8 — Low-pressure entries, not polished ones
+As someone who's tried journaling before, I want entries that don't need to be "perfect," so effort to make it good doesn't stop me from finishing it at all.
+
+**Acceptance criteria**
+- Given I start an entry, when I want to stop after a sentence or two, then I can save it as-is with no prompt to "add more" or "make it better."
+- Given I open a past entry, when I look at it later, then there's no visible quality/completeness score attached to it.
+- Given I complete an entry, when I save it, then at least one piece of structured input (mood tap, tag, or similar) was recorded — not nothing.
+- *Negative:* Given I've entered zero signal of any kind, when I try to save, then the entry is not accepted as complete.
+
+**Evidence:** own logged behavior — "its so easy to... not do it. its a lot of work to make it all perfect"
+
+## MoSCoW
+
+| Band | Stories |
+|---|---|
+| Must | 1, 2, 3 |
+| Should | 5, 8 |
+| Could | 4, 6 |
+| Won't | 7 — value should come from Story 1 being fast/frictionless enough to try, not a separate persuasion sequence; a designed onboarding flow is later-semester scope, not v1 |
+
+## MVP Slice
+Stories 1 + 3: log a frictionless entry (no forced text, saves in under 60 seconds with minimal signal required), then find that entry again by date. Demonstrable start to finish, no "and then imagine it saves."
+
+## Known Gap (not a story)
+Subject 1 reflects primarily by calling long-term friends, not through any app or screen — no evidence yet on what would make Glimmer better than that conversation. This directly contradicts the "doomscrolling" assumption in the original D02 pitch and is an open question for further discovery, not something papered over with an invented social feature.

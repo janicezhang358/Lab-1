@@ -1,0 +1,9 @@
+Dinosaurs - Test File
+
+This is a test file for my IST 300 Lab 1 repository.
+
+Some fun dinosaur facts:
+- Tyrannosaurus rex lived about 68-66 million years ago.
+- Triceratops had three horns and a large bony frill.
+- Velociraptors were about the size of a turkey.
+- Birds are the living descendants of dinosaurs.

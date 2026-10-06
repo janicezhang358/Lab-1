@@ -1,0 +1,495 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glimmer prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f6f1f3; --surface: #fffbfc; --ink: #2f2236; --ink-soft: #65566b; --field: #8c7a92;
+    --hairline: #e6dce2; --plum: #6b3f7d; --plum-deep: #56306a; --plum-tint: #efe6f2;
+    --honey: #f0be5a; --honey-tint: #fbefd6; --sage-tint: #e6eee7; --sage-ink: #3f5e4b; --bar: #8a5f9c;
+    --sans: "Atkinson Hyperlegible Next", system-ui, sans-serif; --serif: "Literata", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); color: var(--ink); }
+  body { margin: 0; font: 16px/1.55 var(--sans); }
+  ::selection { background: var(--honey-tint); }
+  :focus-visible { outline: 3px solid var(--plum); outline-offset: 2px; }
+  a { color: var(--plum); }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 500; letter-spacing: -0.01em; margin: 0; }
+  h1 { font-size: 36px; line-height: 1.2; } h2 { font-size: 24px; } h3 { font-size: 18px; font-family: var(--sans); font-weight: 600; }
+  p { margin: 0; }
+  .wrap { max-width: 46rem; margin: 0 auto; padding: 24px 20px 96px; }
+  header.top { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; justify-content: space-between; }
+  .wordmark { display: inline-flex; align-items: center; gap: 8px; font: 600 20px var(--serif); color: var(--ink); text-decoration: none; }
+  .spark { width: 10px; height: 10px; border-radius: 50%; background: var(--honey); box-shadow: 0 0 10px 3px rgb(240 190 90 / .55); }
+  nav ul { display: flex; gap: 4px; list-style: none; margin: 0 -8px; padding: 0; overflow-x: auto; white-space: nowrap; }
+  nav a { display: inline-flex; min-height: 44px; align-items: center; padding: 0 8px; color: var(--ink-soft); text-decoration: none; text-underline-offset: 6px; }
+  nav a[aria-current="page"] { color: var(--plum); font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; }
+  main { margin-top: 40px; display: flex; flex-direction: column; gap: 40px; }
+  .banner { background: var(--honey-tint); border-radius: 12px; padding: 12px 16px; font-size: 14px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 12px; border: 0; font: 600 16px var(--sans); cursor: pointer; text-decoration: none; }
+  .btn.primary { background: var(--plum); color: #fff; } .btn.primary:hover { background: var(--plum-deep); }
+  .btn.secondary { background: var(--plum-tint); color: var(--plum); }
+  .btn.quiet { background: none; color: var(--plum); padding: 0 8px; } .btn.quiet:hover { text-decoration: underline; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .stack { display: flex; flex-direction: column; gap: 16px; }
+  label.f { display: flex; flex-direction: column; gap: 6px; font-weight: 600; }
+  input[type=text], input[type=date], textarea.in { min-height: 44px; width: 100%; border: 1.5px solid var(--field); border-radius: 10px; background: var(--surface); padding: 8px 12px; font: 16px var(--sans); color: var(--ink); }
+  .soft { color: var(--ink-soft); } .small { font-size: 14px; }
+  .notice { border-radius: 12px; padding: 12px 16px; background: var(--honey-tint); }
+  .notice.ok { background: var(--sage-tint); color: var(--sage-ink); }
+  .quote { position: relative; padding: 24px 0; font: 400 30px/1.35 var(--serif); max-width: 36rem; }
+  .glow { position: absolute; inset: -40px -32px auto; height: 220px; pointer-events: none;
+    background: radial-gradient(60% 50% at 12% 0%, rgb(240 190 90 / .24), transparent 70%); animation: in .6s ease-out both; }
+  @keyframes in { from { opacity: 0 } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  .moods { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; list-style: none; padding: 0; margin: 20px 0 0; }
+  @media (min-width: 560px) { .moods { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 760px) { .moods { grid-template-columns: repeat(4, 1fr); } }
+  .chip { width: 100%; min-height: 44px; border: 0; border-radius: 999px; background: var(--surface); padding: 8px 16px; text-align: left; font: 16px var(--sans); color: var(--ink); cursor: pointer; }
+  .chip:hover { background: var(--plum-tint); } .chip.on { background: var(--plum); color: #fff; }
+  .card { background: var(--sage-tint); border-radius: 24px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+  .panel { background: var(--surface); border-radius: 24px; padding: 24px; }
+  .list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--hairline); }
+  .list > li { border-bottom: 1px solid var(--hairline); }
+  .entry-link { display: block; padding: 18px 12px; margin: 0 -12px; border-radius: 12px; color: inherit; text-decoration: none; }
+  .entry-link:hover { background: var(--surface); }
+  .entry-title { font: 500 21px var(--serif); margin-top: 2px; }
+  .excerpt { color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .sheet { position: relative; overflow: hidden; background: var(--surface); margin: 0 -20px; padding: 32px 20px; }
+  @media (min-width: 768px) { .sheet { margin: 0; border-radius: 24px; padding: 48px; box-shadow: 0 1px 0 var(--hairline), 0 24px 48px -32px rgb(47 34 54 / .35); } }
+  .sheet .glow { inset: 0; height: auto; }
+  .sheet-meta { position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--ink-soft); align-items: center; }
+  .title-in { width: 100%; border: 0; background: transparent; font: 500 36px var(--serif); color: var(--ink); padding: 0; }
+  .body-in { width: 100%; max-width: 38rem; border: 0; background: transparent; resize: none; font: 18px/1.75 var(--serif); color: var(--ink); padding: 0; min-height: 12rem; }
+  @media (min-width: 768px) { .body-in { font-size: 21px; } }
+  .title-in::placeholder, .body-in::placeholder { color: rgb(101 86 107 / .65); }
+  .photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; list-style: none; padding: 0; margin: 0; }
+  @media (min-width: 560px) { .photos { grid-template-columns: repeat(3, 1fr); } }
+  .photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; display: block; }
+  .bars { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+  .bars li { display: grid; grid-template-columns: 9.5rem 1fr; gap: 12px; align-items: center; padding: 0 4px; border-radius: 8px; }
+  .bars li:hover { background: rgb(230 220 226 / .5); }
+  .bar { display: inline-block; height: 16px; background: var(--bar); border-radius: 0 4px 4px 0; vertical-align: middle; margin-right: 8px; }
+  .num { font-size: 14px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  table { border-collapse: collapse; margin-top: 12px; } td, th { text-align: left; padding: 4px 24px 4px 0; border-bottom: 1px solid var(--hairline); }
+  details summary { cursor: pointer; color: var(--plum); }
+  fieldset { border: 0; padding: 0; margin: 0; } legend { font-weight: 600; margin-bottom: 4px; }
+  .radios { display: flex; flex-wrap: wrap; gap: 4px 20px; } .radios label { display: flex; gap: 8px; align-items: center; min-height: 44px; }
+  input[type=radio] { width: 20px; height: 20px; accent-color: var(--plum); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--plum); display: inline-block; animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { opacity: .3 } }
+  audio { width: 100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="wordmark" href="#home"><span class="spark" aria-hidden="true"></span>Glimmer</a>
+    <nav aria-label="Main"><ul>
+      <li><a href="#home" data-nav="home">Home</a></li>
+      <li><a href="#journal" data-nav="journal">Journal</a></li>
+      <li><a href="#mood" data-nav="mood">Mood</a></li>
+      <li><a href="#goals" data-nav="goals">Goals &amp; worries</a></li>
+      <li><a href="#settings" data-nav="settings">Settings</a></li>
+    </ul></nav>
+  </header>
+  <main id="main"></main>
+</div>
+
+<script>
+// Glimmer prototype: everything is saved in this browser only (localStorage for text,
+// IndexedDB for photos and voice notes). No account, no server, nothing is sent anywhere.
+
+const MOODS = [
+  ["joyful","😊","Joyful"],["grateful","🙏","Grateful"],["calm","😌","Calm"],["hopeful","🌱","Hopeful"],
+  ["proud","💪","Proud"],["okay","😐","Okay"],["tired","😴","Tired"],["anxious","😟","Anxious"],
+  ["sad","😢","Sad"],["angry","😠","Angry"],["overwhelmed","😵‍💫","Overwhelmed"],["lonely","😔","Lonely"],
+].map(([key, emoji, label]) => ({ key, emoji, label }));
+
+const QUOTES = [
+  "Small steps still count as moving.","You don't have to finish everything today.","Some days the win is simply showing up.",
+  "Be as patient with yourself as you'd be with a friend.","A quiet moment is still a good moment.","Today is allowed to feel different from yesterday.",
+  "You can begin again at any hour.","Notice one thing that went right.","Your pace is still a pace.","It's okay to set something down for a while.",
+  "Even cloudy days carry some light.","Write it down, then let it rest.","You are allowed to take up space.","Kindness counts, including toward yourself.",
+  "Not every question needs an answer today.","A slow breath is a fine place to start.","Little joys are still joys.","You have made it through hard days before.",
+  "Let today be enough as it is.","Progress can be quiet.","Feelings pass through; they don't have to stay.","There's no wrong way to have a day.",
+  "Give yourself the credit you'd give anyone else.","The next small thing is all you need to see.","It's fine to want simple things.",
+  "Some growth only shows when you look back.","You can hold hope and worry at the same time.","Today's page doesn't need to be perfect.",
+  "Thank yourself for the part you already did.","You don't have to carry it all at once.",
+];
+
+// ---------- dates (local calendar days) ----------
+const pad = (n) => String(n).padStart(2, "0");
+const toDay = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => toDay(new Date());
+const parseDay = (s) => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d, 12); };
+const addDays = (s, n) => { const d = parseDay(s); d.setDate(d.getDate() + n); return toDay(d); };
+const addMonth = (s) => { const d = parseDay(s); const day = d.getDate(); d.setDate(1); d.setMonth(d.getMonth() + 1);
+  d.setDate(Math.min(day, new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate())); return toDay(d); };
+const longDay = (s) => parseDay(s).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+const time = (iso) => new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+const quoteFor = (s) => { const [y, m, d] = s.split("-").map(Number); return QUOTES[Math.floor(Date.UTC(y, m - 1, d) / 864e5) % 30]; };
+
+// ---------- storage ----------
+const KEY = "glimmer-prototype-v1";
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) ?? {}; } catch { return {}; } };
+const db = Object.assign({ entries: [], media: [], moods: [], items: [], responses: [] }, load());
+const persist = () => localStorage.setItem(KEY, JSON.stringify(db));
+const uid = () => crypto.randomUUID();
+
+// Photos and voice notes are too big for localStorage, so they go in IndexedDB.
+const idb = new Promise((resolve, reject) => {
+  const req = indexedDB.open("glimmer-files", 1);
+  req.onupgradeneeded = () => req.result.createObjectStore("files");
+  req.onsuccess = () => resolve(req.result);
+  req.onerror = () => reject(req.error);
+});
+const fileOp = async (mode, fn) => { const d = await idb; return new Promise((res, rej) => {
+  const r = fn(d.transaction("files", mode).objectStore("files")); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); };
+const putFile = (id, blob) => fileOp("readwrite", (s) => s.put(blob, id));
+const getFile = (id) => fileOp("readonly", (s) => s.get(id));
+const delFile = (id) => fileOp("readwrite", (s) => s.delete(id));
+
+// ---------- tiny helpers ----------
+const main = document.getElementById("main");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const $ = (sel, root = main) => root.querySelector(sel);
+const $$ = (sel, root = main) => [...root.querySelectorAll(sel)];
+const urls = [];
+const objectUrl = (blob) => { const u = URL.createObjectURL(blob); urls.push(u); return u; };
+const fmtDur = (s) => `${Math.floor(Math.round(s) / 60)}:${pad(Math.round(s) % 60)}`;
+
+let leaveGuard = null; // set by the editor while changes are unsaved
+window.addEventListener("beforeunload", (e) => { if (leaveGuard?.()) e.preventDefault(); });
+
+// ---------- router ----------
+function route() {
+  urls.splice(0).forEach(URL.revokeObjectURL);
+  stopRecording?.();
+  const [page, id] = (location.hash.slice(1) || "home").split("/");
+  leaveGuard = null;
+  const active = page === "entry" ? "journal" : page;
+  $$("[data-nav]", document).forEach((a) => a.dataset.nav === active ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
+  ({ home, journal, entry: () => entry(id), mood, goals, settings }[page] ?? home)();
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a[href^='#']");
+  if (a && leaveGuard?.() && !confirm("Your latest changes haven't saved yet. Leave anyway?")) e.preventDefault();
+}, true);
+
+const banner = `<p class="banner">Prototype: your writing is saved only in this browser on this device. Nothing is sent to a server.</p>`;
+
+// ---------- home ----------
+function home() {
+  const due = db.items.filter((i) => i.status !== "resolved" && i.follow_up_on && i.follow_up_on <= today());
+  main.innerHTML = `
+    ${banner}
+    <section aria-label="Today's quote" class="quote"><div class="glow" aria-hidden="true"></div><p style="position:relative">${esc(quoteFor(today()))}</p></section>
+    <section aria-labelledby="mh"><h2 id="mh">How are you feeling right now?</h2>
+      <ul class="moods">${MOODS.map((m) => `<li><button class="chip" data-mood="${m.key}"><span aria-hidden="true">${m.emoji}</span> ${m.label}</button></li>`).join("")}</ul>
+      <div aria-live="polite" id="moodmsg" style="margin-top:16px"></div>
+      <p style="margin-top:12px"><a href="#mood">See your mood history</a></p></section>
+    ${due.length ? `<section class="stack" aria-label="Check-ins">${due.map(followUpCard).join("")}</section>` : ""}
+    <div class="row"><a class="btn primary" href="#entry/new">Write today's entry</a><a href="#journal">Open your journal</a></div>`;
+  $$("[data-mood]").forEach((b) => b.onclick = () => {
+    const m = MOODS.find((x) => x.key === b.dataset.mood);
+    const at = new Date().toISOString();
+    db.moods.push({ id: uid(), mood_key: m.key, checked_in_at: at }); persist();
+    $$("[data-mood]").forEach((x) => x.classList.toggle("on", x === b));
+    $("#moodmsg").innerHTML = `<p class="notice ok">Saved: ${m.emoji} ${m.label} at ${time(at)}.</p>`;
+  });
+  $$("[data-answer]").forEach((b) => b.onclick = () => {
+    const card = b.closest(".card"); const item = db.items.find((i) => i.id === card.dataset.item);
+    const answer = b.dataset.answer;
+    db.responses.push({ id: uid(), item_id: item.id, response: answer, note: $("textarea", card).value.trim() || null, created_at: new Date().toISOString() });
+    if (answer === "done") item.status = "resolved"; else { item.status = "active"; item.follow_up_on = addDays(today(), 7); }
+    persist();
+    card.outerHTML = `<p class="notice ok">${answer === "done" ? "Marked as done. Nice work seeing it through." : "Thanks for checking in. We'll ask again in a week."}</p>`;
+  });
+}
+function followUpCard(i) {
+  return `<article class="card" data-item="${i.id}">
+    <h3 style="color:var(--sage-ink)">${i.kind === "goal" ? "Checking in on a goal" : "Checking in on something that was on your mind"}</h3>
+    <p style="font:20px var(--serif)">&ldquo;${esc(i.text)}&rdquo;</p>
+    <p>${i.kind === "goal" ? "How is it going?" : "How are you feeling about it now?"}</p>
+    <label class="f small">Add a note (optional)<textarea class="in" rows="2" maxlength="1000"></textarea></label>
+    <div class="row"><button class="btn secondary" data-answer="still_on_my_mind">Still on my mind</button>
+    <button class="btn secondary" data-answer="better">Better</button><button class="btn secondary" data-answer="done">Done</button></div></article>`;
+}
+
+// ---------- journal list ----------
+function journal() {
+  const sorted = [...db.entries].sort((a, b) => b.entry_date.localeCompare(a.entry_date) || b.created_at.localeCompare(a.created_at));
+  main.innerHTML = `<h1>Journal</h1><a class="btn primary" style="align-self:flex-start" href="#entry/new">Write today's entry</a>
+    ${sorted.length ? `<ul class="list">${sorted.map((e) => `<li><a class="entry-link" href="#entry/${e.id}">
+      <span class="small soft">${longDay(e.entry_date)}</span><p class="entry-title">${esc(e.title || "Untitled")}</p>
+      ${e.body ? `<p class="excerpt">${esc(e.body.slice(0, 160))}</p>` : ""}</a></li>`).join("")}</ul>`
+    : `<div><p style="font:500 24px var(--serif)">Nothing here yet</p><p class="soft" style="margin-top:8px">When you're ready, write a few lines about today.</p></div>`}`;
+}
+
+// ---------- entry editor ----------
+let stopRecording = null;
+function entry(id) {
+  let current = db.entries.find((e) => e.id === id) ?? null;
+  if (id !== "new" && !current) { main.innerHTML = `<h1>This entry isn't here</h1><a href="#journal">Back to journal</a>`; return; }
+  const draft = { title: current?.title ?? "", body: current?.body ?? "", entry_date: current?.entry_date ?? today() };
+  let dirty = false, timer = null;
+  leaveGuard = () => dirty;
+
+  main.innerHTML = `<a href="#journal" style="align-self:flex-start">Back to journal</a>
+    <article class="sheet"><div class="glow" aria-hidden="true"></div>
+      <div class="sheet-meta"><label>Date <input type="date" id="date" value="${draft.entry_date}"></label><p aria-live="polite" id="status">${current ? "Saved" : "Start typing. Glimmer saves as you go."}</p></div>
+      <div style="position:relative;margin-top:32px" class="stack">
+        <label class="small soft" for="title">Title</label><input id="title" class="title-in" maxlength="200" placeholder="Untitled" value="${esc(draft.title)}">
+        <label class="small soft" for="body" style="margin-top:12px">Your entry</label><textarea id="body" class="body-in" placeholder="What's on your mind today?">${esc(draft.body)}</textarea>
+      </div>
+      <section style="position:relative;margin-top:40px;padding-top:32px;border-top:1px solid var(--hairline)" class="stack" aria-labelledby="medh">
+        <h2 id="medh">Photos and voice notes</h2>
+        <div id="medmsg" aria-live="polite"></div>
+        <label class="f">Add photos<span class="small soft" style="font-weight:400">JPG, PNG, or WebP, up to 10 MB each.</span>
+          <input type="file" id="photos" accept="image/jpeg,image/png,image/webp" multiple></label>
+        <ul class="photos" id="photolist"></ul>
+        <div id="recorder"></div>
+        <label class="f">Or upload an audio file<span class="small soft" style="font-weight:400">Up to 5 minutes and 20 MB.</span>
+          <input type="file" id="audiofile" accept=".m4a,.mp3,.wav,.ogg,.webm,.aac,audio/mp4,audio/x-m4a,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/aac"></label>
+        <ul class="list" id="voicelist" style="border-top:0"></ul>
+      </section>
+    </article>
+    ${current ? `<button class="btn secondary" id="delete" style="align-self:flex-start">Delete entry</button>` : ""}`;
+
+  const body = $("#body");
+  const grow = () => { body.style.height = "auto"; body.style.height = body.scrollHeight + "px"; };
+  grow();
+
+  function save(force = false) {
+    if (!current && !force && !draft.title.trim() && !draft.body.trim()) return null;
+    const now = new Date().toISOString();
+    if (!current) {
+      current = { id: uid(), created_at: now, ...draft };
+      db.entries.push(current);
+      if (document.getElementById("status")) history.replaceState(null, "", "#entry/" + current.id);
+    }
+    Object.assign(current, draft, { title: draft.title.trim() || null, updated_at: now });
+    persist(); dirty = false;
+    const status = document.getElementById("status"); // may be gone if you already left the page
+    if (status) status.textContent = `Saved at ${time(now)}`;
+    return current.id;
+  }
+  const change = (field, value) => {
+    draft[field] = value; dirty = true; $("#status").textContent = "Saving…";
+    clearTimeout(timer); timer = setTimeout(save, 1000);
+  };
+  $("#title").oninput = (e) => change("title", e.target.value);
+  body.oninput = (e) => { change("body", e.target.value); grow(); };
+  $("#date").onchange = (e) => change("entry_date", e.target.value);
+  $("#delete") && ($("#delete").onclick = async () => {
+    if (!confirm("Delete this entry and its photos and voice notes? This can't be undone.")) return;
+    for (const m of db.media.filter((m) => m.entry_id === current.id)) await delFile(m.id);
+    db.media = db.media.filter((m) => m.entry_id !== current.id);
+    db.entries = db.entries.filter((e) => e !== current); persist(); dirty = false; location.hash = "#journal";
+  });
+
+  const msg = (text, ok) => { $("#medmsg").innerHTML = text ? `<p class="notice ${ok ? "ok" : ""}">${esc(text)}</p>` : ""; };
+  async function addMedia(kind, blob, seconds) {
+    const entryId = current?.id ?? save(true);
+    const m = { id: uid(), entry_id: entryId, kind, mime_type: blob.type.split(";")[0], size_bytes: blob.size,
+      duration_seconds: seconds == null ? null : Math.ceil(seconds), created_at: new Date().toISOString() };
+    try { await putFile(m.id, blob); } catch { msg("That file couldn't be saved. Your browser may be out of space."); return; }
+    db.media.push(m); persist(); renderMedia();
+  }
+  async function renderMedia() {
+    const mine = db.media.filter((m) => current && m.entry_id === current.id);
+    const photoItems = await Promise.all(mine.filter((m) => m.kind === "photo").map(async (m) => {
+      const blob = await getFile(m.id); return blob ? `<li class="stack" style="gap:8px"><a href="${objectUrl(blob)}" target="_blank"><img src="${urls.at(-1)}" alt="Photo added ${new Date(m.created_at).toLocaleDateString()}"></a>
+      <button class="btn quiet small" data-del="${m.id}" style="align-self:flex-start">Delete photo</button></li>` : ""; }));
+    const voiceItems = await Promise.all(mine.filter((m) => m.kind === "voice").map(async (m) => {
+      const blob = await getFile(m.id); return blob ? `<li class="stack" style="gap:8px;padding:12px 0"><p class="small soft">Voice note, ${new Date(m.created_at).toLocaleDateString()}${m.duration_seconds != null ? ", " + fmtDur(m.duration_seconds) : ""}</p>
+      <audio controls src="${objectUrl(blob)}"></audio><button class="btn quiet small" data-del="${m.id}" style="align-self:flex-start">Delete voice note</button></li>` : ""; }));
+    $("#photolist").innerHTML = photoItems.join(""); $("#voicelist").innerHTML = voiceItems.join("");
+    $$("[data-del]").forEach((b) => b.onclick = async () => {
+      if (!confirm("Delete this? This can't be undone.")) return;
+      await delFile(b.dataset.del); db.media = db.media.filter((m) => m.id !== b.dataset.del); persist(); renderMedia();
+    });
+  }
+  renderMedia();
+
+  $("#photos").onchange = async (e) => {
+    msg("");
+    for (const f of e.target.files) {
+      if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) { msg(`${f.name} isn't a JPG, PNG, or WebP photo.`); continue; }
+      if (f.size > 10 * 1024 * 1024) { msg(`That photo is ${(f.size / 1048576).toFixed(1)} MB. Photos can be up to 10 MB.`); continue; }
+      await addMedia("photo", f, null);
+    }
+    e.target.value = "";
+  };
+  $("#audiofile").onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return; msg("");
+    if (f.size > 20 * 1024 * 1024) { msg(`That recording is ${(f.size / 1048576).toFixed(1)} MB. Voice notes can be up to 20 MB.`); e.target.value = ""; return; }
+    const seconds = await new Promise((res) => { const a = new Audio(); a.preload = "metadata"; a.onloadedmetadata = () => res(isFinite(a.duration) ? a.duration : null); a.onerror = () => res(null); a.src = objectUrl(f); });
+    if (seconds != null && seconds > 300) msg("That recording is longer than 5 minutes. Voice notes can be up to 5 minutes.");
+    else { await addMedia("voice", f, seconds); msg("Voice note saved.", true); }
+    e.target.value = "";
+  };
+  recorder($("#recorder"), (blob, s) => addMedia("voice", blob, s).then(() => msg("Voice note saved.", true)), msg);
+}
+
+// ---------- voice recorder (MediaRecorder) ----------
+const TYPES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/ogg;codecs=opus"];
+function recorder(el, onSave, msg) {
+  let stream, rec, started, tick, preview;
+  const idle = () => { el.innerHTML = `<button class="btn secondary">Record a voice note</button><span class="sr" aria-live="polite" id="recsr"></span>`; el.firstChild.onclick = start; };
+  stopRecording = () => { clearInterval(tick); stream?.getTracks().forEach((t) => t.stop()); if (rec?.state === "recording") { rec.onstop = null; rec.stop(); } };
+  async function start() {
+    msg("");
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { msg("This browser can't record audio here. You can upload an audio file instead. (Recording needs https:// or a local file.)"); return; }
+    el.innerHTML = `<button class="btn secondary" disabled>Waiting for microphone…</button>`;
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch (err) {
+      idle();
+      msg(err.name === "NotAllowedError" ? "Glimmer can't use your microphone right now. You can allow it in your browser settings, or upload an audio file instead."
+        : err.name === "NotFoundError" ? "No microphone was found. You can upload an audio file instead."
+        : "The microphone couldn't start. It may be in use by another app. You can upload an audio file instead.");
+      return;
+    }
+    const type = TYPES.find((t) => MediaRecorder.isTypeSupported(t));
+    rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const chunks = [];
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    rec.onstop = () => {
+      clearInterval(tick); stream.getTracks().forEach((t) => t.stop());
+      const seconds = Math.min(300, (Date.now() - started) / 1000);
+      const blob = new Blob(chunks, { type: (rec.mimeType || type || "audio/webm").split(";")[0] });
+      preview = { blob, seconds };
+      el.innerHTML = `<div class="stack" style="gap:12px"><span class="sr" aria-live="polite">Recording stopped</span><audio controls src="${objectUrl(blob)}"></audio>
+        <p class="small soft">Length ${fmtDur(seconds)}</p><div class="row"><button class="btn primary" id="rsave">Save voice note</button><button class="btn quiet" id="rdiscard">Discard</button></div></div>`;
+      $("#rsave", el).onclick = async () => { await onSave(preview.blob, preview.seconds); idle(); };
+      $("#rdiscard", el).onclick = idle;
+    };
+    started = Date.now(); rec.start(1000);
+    el.innerHTML = `<div class="row"><span class="sr" aria-live="polite">Recording started</span><span><span class="rec-dot" aria-hidden="true"></span> <b>Recording</b> <span id="clock" style="font-variant-numeric:tabular-nums">0:00</span> <span class="small soft">of 5:00</span></span><button class="btn primary" id="rstop">Stop</button></div>`;
+    $("#rstop", el).onclick = () => rec.stop();
+    tick = setInterval(() => {
+      const s = (Date.now() - started) / 1000; $("#clock", el).textContent = fmtDur(s);
+      if (s >= 300) { msg("Recordings stop at 5 minutes. You can save this one and record another."); rec.stop(); }
+    }, 250);
+  }
+  idle();
+}
+
+// ---------- mood ----------
+function mood() {
+  leaveGuard = null;
+  const since = Date.now() - 30 * 864e5;
+  const recent = db.moods.filter((m) => new Date(m.checked_in_at).getTime() >= since);
+  const counts = MOODS.map((m) => ({ m, n: recent.filter((c) => c.mood_key === m.key).length }));
+  const max = Math.max(1, ...counts.map((c) => c.n));
+  const byDay = {};
+  [...db.moods].sort((a, b) => b.checked_in_at.localeCompare(a.checked_in_at))
+    .forEach((c) => (byDay[toDay(new Date(c.checked_in_at))] ??= []).push(c));
+  main.innerHTML = `<h1>Mood</h1>${!db.moods.length ? `<div><p style="font:500 24px var(--serif)">No check-ins yet</p><p class="soft" style="margin-top:8px">You can check in from the <a href="#home">home page</a> whenever you like.</p></div>` : `
+    <figure class="stack" style="margin:0"><figcaption><h2>Your check-ins, last 30 days</h2></figcaption>
+      <ul class="bars">${counts.map(({ m, n }) => `<li><span><span aria-hidden="true">${m.emoji}</span> ${m.label}<span class="sr">, ${n} check-ins</span></span>
+        <span aria-hidden="true">${n ? `<span class="bar" style="width:${(n / max) * 80}%"></span>` : ""}<span class="num">${n}</span></span></li>`).join("")}</ul>
+      <details><summary>Show as a table</summary><table><tr><th>Mood</th><th>Check-ins</th></tr>${counts.map(({ m, n }) => `<tr><td>${m.label}</td><td>${n}</td></tr>`).join("")}</table></details>
+    </figure>
+    <section class="stack"><h2>By day</h2>${Object.entries(byDay).map(([day, list]) => `<div><h3>${longDay(day)}</h3>
+      <ul style="list-style:none;padding:0;margin:8px 0 0">${list.map((c) => { const m = MOODS.find((x) => x.key === c.mood_key);
+        return `<li style="display:flex;gap:16px"><span class="soft" style="width:5rem;font-variant-numeric:tabular-nums">${time(c.checked_in_at)}</span><span><span aria-hidden="true">${m.emoji}</span> ${m.label}</span></li>`; }).join("")}</ul></div>`).join("")}
+    </section>`}`;
+}
+
+// ---------- goals & worries ----------
+function followPicker(name) {
+  return `<fieldset><legend>When should Glimmer check in?</legend><div class="radios">
+    ${[["tomorrow", "Tomorrow"], ["week", "In a week"], ["month", "In a month"], ["date", "Pick a date"]].map(([v, l]) =>
+      `<label><input type="radio" name="${name}" value="${v}" ${v === "week" ? "checked" : ""}> ${l}</label>`).join("")}</div>
+    <input type="date" data-pick="${name}" min="${today()}" hidden style="max-width:16rem;margin-top:8px" aria-label="Date"></fieldset>`;
+}
+function pickedDate(root, name) {
+  const v = $(`input[name="${name}"]:checked`, root).value;
+  return v === "tomorrow" ? addDays(today(), 1) : v === "week" ? addDays(today(), 7) : v === "month" ? addMonth(today()) : $(`[data-pick="${name}"]`, root).value || null;
+}
+function wirePicker(root, name) {
+  $$(`input[name="${name}"]`, root).forEach((r) => r.onchange = () => $(`[data-pick="${name}"]`, root).hidden = r.value !== "date" || !r.checked);
+}
+function goals() {
+  leaveGuard = null;
+  const open = db.items.filter((i) => i.status !== "resolved").sort((a, b) => (a.follow_up_on ?? "").localeCompare(b.follow_up_on ?? ""));
+  const resolved = db.items.filter((i) => i.status === "resolved");
+  const row = (i) => `<li class="stack" style="gap:8px;padding:18px 0" data-id="${i.id}"><p style="font:18px var(--serif)">${esc(i.text)}</p>
+    ${i.status !== "resolved" ? `<p class="small soft">${i.status === "postponed" ? "Postponed to" : "Next check-in:"} ${longDay(i.follow_up_on)}</p>` : ""}
+    <div class="row" style="gap:4px">${i.status !== "resolved" ? `<button class="btn quiet" data-act="edit">Edit</button><button class="btn quiet" data-act="postpone">Postpone</button><button class="btn quiet" data-act="resolve">Mark resolved</button>` : ""}
+    <button class="btn quiet" data-act="delete">Delete</button></div></li>`;
+  const section = (title, list) => list.length ? `<section><h2>${title}</h2><ul class="list" style="border-top:0">${list.map(row).join("")}</ul></section>` : "";
+  main.innerHTML = `<div><h1>Goals &amp; worries</h1><p class="soft" style="margin-top:8px">Glimmer checks in on the day you choose, right on your home page.</p></div>
+    <form class="panel stack" id="add"><h2>Add something</h2>
+      <fieldset><legend>Is it a goal or a worry?</legend><div class="radios"><label><input type="radio" name="kind" value="goal" checked> Goal</label><label><input type="radio" name="kind" value="worry"> Worry</label></div></fieldset>
+      <label class="f">What is it?<textarea class="in" name="text" rows="2" maxlength="500" required></textarea></label>
+      ${followPicker("add-fu")}<div id="addmsg"></div><button class="btn primary" style="align-self:flex-start">Add to my list</button></form>
+    ${db.items.length ? "" : `<div><p style="font:500 24px var(--serif)">Nothing on your list yet</p><p class="soft" style="margin-top:8px">Add a goal you're working toward or a worry you'd like to check in on later.</p></div>`}
+    ${section("Goals", open.filter((i) => i.kind === "goal"))}${section("Worries", open.filter((i) => i.kind === "worry"))}
+    ${resolved.length ? `<details><summary><b>Resolved (${resolved.length})</b></summary><ul class="list" style="border-top:0">${resolved.map(row).join("")}</ul></details>` : ""}`;
+  const form = $("#add"); wirePicker(form, "add-fu");
+  form.onsubmit = (e) => {
+    e.preventDefault();
+    const text = form.text.value.trim(), date = pickedDate(form, "add-fu");
+    if (!text) return;
+    if (!date) { $("#addmsg").innerHTML = `<p class="notice">Choose a date for the check-in.</p>`; return; }
+    db.items.push({ id: uid(), kind: form.kind.value, text, status: "active", follow_up_on: date, created_at: new Date().toISOString() });
+    persist(); goals();
+  };
+  $$("[data-act]").forEach((b) => b.onclick = () => {
+    const li = b.closest("li"), item = db.items.find((i) => i.id === li.dataset.id), act = b.dataset.act;
+    if (act === "resolve") { item.status = "resolved"; persist(); return goals(); }
+    if (act === "delete") { if (confirm("Delete this item? This can't be undone.")) { db.items = db.items.filter((i) => i !== item); db.responses = db.responses.filter((r) => r.item_id !== item.id); persist(); goals(); } return; }
+    const name = "fu-" + item.id;
+    li.innerHTML = `${act === "edit" ? `<label class="f">What is it?<textarea class="in" rows="2" maxlength="500">${esc(item.text)}</textarea></label>` : `<p style="font:18px var(--serif)">${esc(item.text)}</p>`}
+      ${followPicker(name)}<div class="row"><button class="btn primary" data-save>${act === "edit" ? "Save changes" : "Postpone"}</button><button class="btn quiet" data-cancel>Cancel</button></div>`;
+    wirePicker(li, name);
+    $("[data-cancel]", li).onclick = goals;
+    $("[data-save]", li).onclick = () => {
+      const date = pickedDate(li, name); if (!date) return;
+      if (act === "edit") { const t = $("textarea", li).value.trim(); if (!t) return; item.text = t; } else item.status = "postponed";
+      item.follow_up_on = date; persist(); goals();
+    };
+  });
+}
+
+// ---------- settings ----------
+function settings() {
+  leaveGuard = null;
+  main.innerHTML = `<h1>Settings</h1>
+    <section class="stack"><h2>Download your data</h2><p>A JSON file with your entries, mood check-ins, goals and worries, and follow-up notes. Photos and voice notes stay in the browser.</p>
+      <button class="btn secondary" id="dl" style="align-self:flex-start">Download my data</button></section>
+    <section class="stack" style="border-top:1px solid var(--hairline);padding-top:40px"><h2>Delete everything</h2>
+      <p>This removes all of your entries, photos, voice notes, mood check-ins, goals and worries from this browser. It can't be undone.</p>
+      <label class="f">Type "delete my data" to confirm<input type="text" id="confirm" autocomplete="off"></label>
+      <button class="btn secondary" id="wipe" disabled style="align-self:flex-start">Delete my data</button></section>`;
+  $("#dl").onclick = () => {
+    const data = { exported_at: new Date().toISOString(), entries: db.entries.map((e) => ({ ...e, media: db.media.filter((m) => m.entry_id === e.id) })),
+      mood_checkins: db.moods, goals_worries: db.items.map((i) => ({ ...i, follow_up_responses: db.responses.filter((r) => r.item_id === i.id) })) };
+    const a = Object.assign(document.createElement("a"), { href: objectUrl(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })), download: `glimmer-data-${today()}.json` });
+    a.click();
+  };
+  $("#confirm").oninput = (e) => $("#wipe").disabled = e.target.value.trim().toLowerCase() !== "delete my data";
+  $("#wipe").onclick = async () => {
+    for (const m of db.media) await delFile(m.id).catch(() => {});
+    localStorage.removeItem(KEY); Object.assign(db, { entries: [], media: [], moods: [], items: [], responses: [] });
+    main.innerHTML = `<p class="notice ok">Everything has been deleted from this browser.</p><a href="#home">Go home</a>`;
+  };
+}
+
+route();
+</script>
+</body>
+</html>

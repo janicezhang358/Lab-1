@@ -1,0 +1,100 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - link "Glimmer" [ref=e4] [cursor=pointer]:
+      - /url: "#home"
+    - navigation "Main" [ref=e6]:
+      - list [ref=e7]:
+        - listitem [ref=e8]:
+          - link "Home" [ref=e9] [cursor=pointer]:
+            - /url: "#home"
+        - listitem [ref=e10]:
+          - link "Journal" [ref=e11] [cursor=pointer]:
+            - /url: "#journal"
+        - listitem [ref=e12]:
+          - link "Mood" [ref=e13] [cursor=pointer]:
+            - /url: "#mood"
+        - listitem [ref=e14]:
+          - link "Goals & worries" [ref=e15] [cursor=pointer]:
+            - /url: "#goals"
+        - listitem [ref=e16]:
+          - link "Settings" [ref=e17] [cursor=pointer]:
+            - /url: "#settings"
+  - main [ref=e18]:
+    - paragraph [ref=e19]: "Prototype: your writing is saved only in this browser on this device. Nothing is sent to a server."
+    - region "Today's quote" [ref=e20]:
+      - paragraph [ref=e21]: The next small thing is all you need to see.
+    - region [ref=e22]:
+      - group [ref=e23]:
+        - generic [ref=e24]:
+          - heading "How are you feeling right now?" [level=2] [ref=e25]
+          - text: Choose all that apply.
+        - list [ref=e26]:
+          - listitem [ref=e27]:
+            - generic [ref=e28] [cursor=pointer]:
+              - checkbox "Joyful" [ref=e29]
+              - generic [aria-hidden] [ref=e30]: 😊
+              - text: Joyful
+          - listitem [ref=e31]:
+            - generic [ref=e32] [cursor=pointer]:
+              - checkbox "Grateful" [ref=e33]
+              - generic [aria-hidden] [ref=e34]: 🙏
+              - text: Grateful
+          - listitem [ref=e35]:
+            - generic [ref=e36] [cursor=pointer]:
+              - checkbox "Calm" [ref=e37]
+              - generic [aria-hidden] [ref=e38]: 😌
+              - text: Calm
+          - listitem [ref=e39]:
+            - generic [ref=e40] [cursor=pointer]:
+              - checkbox "Hopeful" [ref=e41]
+              - generic [aria-hidden] [ref=e42]: 🌱
+              - text: Hopeful
+          - listitem [ref=e43]:
+            - generic [ref=e44] [cursor=pointer]:
+              - checkbox "Proud" [ref=e45]
+              - generic [aria-hidden] [ref=e46]: 💪
+              - text: Proud
+          - listitem [ref=e47]:
+            - generic [ref=e48] [cursor=pointer]:
+              - checkbox "Okay" [ref=e49]
+              - generic [aria-hidden] [ref=e50]: 😐
+              - text: Okay
+          - listitem [ref=e51]:
+            - generic [ref=e52] [cursor=pointer]:
+              - checkbox "Tired" [ref=e53]
+              - generic [aria-hidden] [ref=e54]: 😴
+              - text: Tired
+          - listitem [ref=e55]:
+            - generic [ref=e56] [cursor=pointer]:
+              - checkbox "Anxious" [ref=e57]
+              - generic [aria-hidden] [ref=e58]: 😟
+              - text: Anxious
+          - listitem [ref=e59]:
+            - generic [ref=e60] [cursor=pointer]:
+              - checkbox "Sad" [ref=e61]
+              - generic [aria-hidden] [ref=e62]: 😢
+              - text: Sad
+          - listitem [ref=e63]:
+            - generic [ref=e64] [cursor=pointer]:
+              - checkbox "Angry" [ref=e65]
+              - generic [aria-hidden] [ref=e66]: 😠
+              - text: Angry
+          - listitem [ref=e67]:
+            - generic [ref=e68] [cursor=pointer]:
+              - checkbox "Overwhelmed" [ref=e69]
+              - generic [aria-hidden] [ref=e70]: 😵‍💫
+              - text: Overwhelmed
+          - listitem [ref=e71]:
+            - generic [ref=e72] [cursor=pointer]:
+              - checkbox "Lonely" [ref=e73]
+              - generic [aria-hidden] [ref=e74]: 😔
+              - text: Lonely
+      - button "Save check-in" [disabled] [ref=e75]
+      - paragraph [ref=e76]:
+        - link "See your mood history" [ref=e77] [cursor=pointer]:
+          - /url: "#mood"
+    - generic [ref=e78]:
+      - link "Write an entry" [ref=e79] [cursor=pointer]:
+        - /url: "#entry/new"
+      - link "Open your journal" [ref=e80] [cursor=pointer]:
+        - /url: "#journal"

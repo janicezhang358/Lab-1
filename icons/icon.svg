@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Glimmer's icon: the lamp from the Home page, lit on the night background.
+       Square and opaque on purpose: iOS rounds the corners itself and turns transparency black.
+       After changing this file, re-render the PNGs with make-icons.mjs; the Home Screen only uses them. -->
+  <defs>
+    <!-- The pool of lamplight. Many soft stops, so the falloff shows no rings. It reaches the corners
+         faintly, which keeps the tile's edge visible on dark wallpapers. -->
+    <radialGradient id="pool" cx="256" cy="250" r="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f4bf6a" stop-opacity=".32"/>
+      <stop offset=".2" stop-color="#f4bf6a" stop-opacity=".24"/>
+      <stop offset=".4" stop-color="#f4bf6a" stop-opacity=".14"/>
+      <stop offset=".6" stop-color="#f4bf6a" stop-opacity=".064"/>
+      <stop offset=".8" stop-color="#f4bf6a" stop-opacity=".019"/>
+      <stop offset="1" stop-color="#f4bf6a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- The flame: the same colors as the page's .flame, with its warm white heart a little above center. -->
+    <radialGradient id="flame" cx="256" cy="238" r="113" gradientUnits="userSpaceOnUse">
+      <stop offset=".22" stop-color="#fffaf0"/>
+      <stop offset=".46" stop-color="#f8d7a0"/>
+      <stop offset=".8" stop-color="#f4bf6a"/>
+    </radialGradient>
+    <filter id="soft" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="35"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="#1d1420"/>
+  <rect width="512" height="512" fill="url(#pool)"/>
+  <!-- glow, then the lamp's thin ring of light, then the flame -->
+  <circle cx="256" cy="250" r="102" fill="#f4bf6a" fill-opacity=".52" filter="url(#soft)"/>
+  <circle cx="256" cy="250" r="117" fill="#f4bf6a" fill-opacity=".19"/>
+  <circle cx="256" cy="250" r="74" fill="url(#flame)"/>
+</svg>

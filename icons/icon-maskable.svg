@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- The same lamp as icon.svg, drawn 84% as large, for Android. Android crops icons to its own shapes
+       (circle, squircle and others), so the lamp and its ring stay inside the central 80% circle
+       while the night background fills the whole square. iOS ignores this file. -->
+  <defs>
+    <radialGradient id="pool" cx="256" cy="251" r="336" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f4bf6a" stop-opacity=".32"/>
+      <stop offset=".2" stop-color="#f4bf6a" stop-opacity=".24"/>
+      <stop offset=".4" stop-color="#f4bf6a" stop-opacity=".14"/>
+      <stop offset=".6" stop-color="#f4bf6a" stop-opacity=".064"/>
+      <stop offset=".8" stop-color="#f4bf6a" stop-opacity=".019"/>
+      <stop offset="1" stop-color="#f4bf6a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="flame" cx="256" cy="241" r="95" gradientUnits="userSpaceOnUse">
+      <stop offset=".22" stop-color="#fffaf0"/>
+      <stop offset=".46" stop-color="#f8d7a0"/>
+      <stop offset=".8" stop-color="#f4bf6a"/>
+    </radialGradient>
+    <filter id="soft" x="-1" y="-1" width="3" height="3"><feGaussianBlur stdDeviation="29"/></filter>
+  </defs>
+  <rect width="512" height="512" fill="#1d1420"/>
+  <rect width="512" height="512" fill="url(#pool)"/>
+  <circle cx="256" cy="251" r="86" fill="#f4bf6a" fill-opacity=".52" filter="url(#soft)"/>
+  <circle cx="256" cy="251" r="98" fill="#f4bf6a" fill-opacity=".19"/>
+  <circle cx="256" cy="251" r="62" fill="url(#flame)"/>
+</svg>

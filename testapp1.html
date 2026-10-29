@@ -2,130 +2,560 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Glimmer prototype</title>
-<!-- Lets "Add to Home Screen" open Glimmer full-screen with its own name and icon. -->
+<!-- Paints the page before anything else, so the very first frame already matches the status bar in both themes.
+     Keep these two colors equal to --bg and the theme-color tags below. -->
+<style>html, body { background: #1d1420; } @media (prefers-color-scheme: light) { html, body { background: #f6eff2; } }</style>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Glimmer</title>
+<meta name="description" content="A private journal for moods, entries, goals and worries.">
+<!-- Lets "Add to Home Screen" open Glimmer full screen with its own name and icon. iOS reads these when the icon is
+     added, so changing them later only reaches phones that remove Glimmer and add it again. -->
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Glimmer">
-<meta name="theme-color" content="#f6f1f3">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600&family=Literata:opsz,wght@7..72,400;7..72,500;7..72,600&display=swap" rel="stylesheet">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<!-- No apple-mobile-web-app-status-bar-style on purpose: without it the status bar is solid and takes the page's color. -->
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6eff2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1d1420" media="(prefers-color-scheme: dark)">
+<meta name="format-detection" content="telephone=no"> <!-- numbers in entries stay text, not phone links -->
+<!-- The fonts live next to the page, so the app looks the same offline. These three are on the first screen.
+     crossorigin is required even here, or each file downloads twice. -->
+<link rel="preload" href="fonts/atkinson-hyperlegible-next-normal-380-700-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/literata-normal-380-700-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/literata-italic-330-400-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+  /* Atkinson Hyperlegible Next and Literata (both SIL OFL), in the weights the design uses. The latin files are kept by
+     the service worker; latin-ext loads only for letters such as ł, ő or ș, and is saved the first time it's used. */
+  @font-face { font-family: 'Atkinson Hyperlegible Next'; font-style: normal; font-weight: 380 700; font-display: swap; src: url(fonts/atkinson-hyperlegible-next-normal-380-700-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Atkinson Hyperlegible Next'; font-style: normal; font-weight: 380 700; font-display: swap; src: url(fonts/atkinson-hyperlegible-next-normal-380-700-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Literata'; font-style: italic; font-weight: 330 400; font-display: swap; src: url(fonts/literata-italic-330-400-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Literata'; font-style: italic; font-weight: 330 400; font-display: swap; src: url(fonts/literata-italic-330-400-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: 'Literata'; font-style: normal; font-weight: 380 700; font-display: swap; src: url(fonts/literata-normal-380-700-latin-ext.woff2) format('woff2');
+    unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+  @font-face { font-family: 'Literata'; font-style: normal; font-weight: 380 700; font-display: swap; src: url(fonts/literata-normal-380-700-latin.woff2) format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* Lamplight: Glimmer is designed for the last ten minutes before sleep. Night is the default and the hero;
+     light mode is the same room in morning light. Color only appears where a mood put it, and the lamp's honey
+     is kept for the lamp, the Write tab, today's ring and one main action per screen. */
+  @property --glow { syntax: "<color>"; inherits: true; initial-value: #f4bf6a; }
+
   :root {
-    --paper: #f6f1f3; --surface: #fffbfc; --ink: #2f2236; --ink-soft: #65566b; --field: #8c7a92;
-    --hairline: #e6dce2; --plum: #6b3f7d; --plum-deep: #56306a; --plum-tint: #efe6f2;
-    --honey: #f0be5a; --honey-tint: #fbefd6; --sage-tint: #e6eee7; --sage-ink: #3f5e4b; --bar: #8a5f9c;
-    --sans: "Atkinson Hyperlegible Next", system-ui, sans-serif; --serif: "Literata", Georgia, serif;
+    --bg: #1d1420;        /* night: deep aubergine */
+    --raised: #2a1f2e;    /* dusk: chips, cards */
+    --raised-2: #352839;  /* pressed, secondary buttons */
+    --well: #231a28;      /* the writing area, raised a little off the page */
+    --line: #3d2f42;
+    --ink: #f2e8de;       /* candle */
+    --ink-soft: #b9a7b1;  /* ash */
+    --field: #8a7690;     /* field edges, at least 3:1 */
+    --lamp: #f4bf6a;      /* the glimmer */
+    --flame: #fffaf0;
+    --link: #f2e8de;      /* links and quiet buttons are candle, not honey */
+    --focus: #f2e8de;     /* a white ring, so it never reads as today's honey ring */
+    --act: #f4bf6a; --on-act: #2a1620; /* the one lit action per screen */
+    --today: #f4bf6a;
+    --danger: #f4a091;
+    --ok-bg: #33291d; --ok-ink: #f5dcae;
+    --warn-bg: #3d2226; --warn-ink: #ffcfc4;
+    --chip: #2a1f2e;
+    --veil: #1d1420;      /* tab bar, top bars and Save dock: solid, so nothing moves under your thumb */
+    --lift: 0 14px 30px -10px rgb(0 0 0 / .8), 0 0 0 1px rgb(0 0 0 / .25);
+    --pool: .34;
+    --w-text: 380; --w-mid: 470; --w-head: 440; --w-quote: 330;
+    --sans: "Atkinson Hyperlegible Next", system-ui, -apple-system, sans-serif;
+    --serif: "Literata", Georgia, serif;
+    --gx: max(20px, env(safe-area-inset-left)); --gx-r: max(20px, env(safe-area-inset-right));
+    --tabbar: 66px;
+    color-scheme: dark;
   }
-  * { box-sizing: border-box; }
-  html { background: var(--paper); color: var(--ink); }
-  body { margin: 0; font: 16px/1.55 var(--sans); }
-  ::selection { background: var(--honey-tint); }
-  :focus-visible { outline: 3px solid var(--plum); outline-offset: 2px; }
-  a { color: var(--plum); }
-  h1, h2, h3 { font-family: var(--serif); font-weight: 500; letter-spacing: -0.01em; margin: 0; }
-  h1 { font-size: 36px; line-height: 1.2; } h2 { font-size: 24px; } h3 { font-size: 18px; font-family: var(--sans); font-weight: 600; }
-  p { margin: 0; }
-  .wrap { max-width: 46rem; margin: 0 auto; padding: 24px 20px 96px; }
-  header.top { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: center; justify-content: space-between; }
-  .wordmark { display: inline-flex; align-items: center; gap: 8px; font: 600 20px var(--serif); color: var(--ink); text-decoration: none; }
-  .spark { width: 10px; height: 10px; border-radius: 50%; background: var(--honey); box-shadow: 0 0 10px 3px rgb(240 190 90 / .55); }
-  nav { min-width: 0; max-width: 100%; }
-  nav ul { display: flex; gap: 4px; list-style: none; margin: 0 -8px; padding: 0; overflow-x: auto; white-space: nowrap; }
-  nav a { display: inline-flex; min-height: 44px; align-items: center; padding: 0 8px; color: var(--ink-soft); text-decoration: none; text-underline-offset: 6px; }
-  nav a[aria-current="page"] { color: var(--plum); font-weight: 600; text-decoration: underline; text-decoration-thickness: 2px; }
-  main { margin-top: 40px; display: flex; flex-direction: column; gap: 40px; }
-  .banner { background: var(--honey-tint); border-radius: 12px; padding: 12px 16px; font-size: 14px; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 20px; border-radius: 12px; border: 0; font: 600 16px var(--sans); cursor: pointer; text-decoration: none; }
-  .btn.primary { background: var(--plum); color: #fff; } .btn.primary:hover { background: var(--plum-deep); }
-  .btn.secondary { background: var(--plum-tint); color: var(--plum); }
-  .btn.quiet { background: none; color: var(--plum); padding: 0 8px; } .btn.quiet:hover { text-decoration: underline; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-  .stack { display: flex; flex-direction: column; gap: 16px; }
-  label.f { display: flex; flex-direction: column; gap: 6px; font-weight: 600; }
-  input[type=text], input[type=date], input[type=number], select, textarea.in { min-height: 44px; width: 100%; border: 1.5px solid var(--field); border-radius: 10px; background: var(--surface); padding: 8px 12px; font: 16px var(--sans); color: var(--ink); }
-  .soft { color: var(--ink-soft); } .small { font-size: 14px; }
-  .notice { border-radius: 12px; padding: 12px 16px; background: var(--honey-tint); }
-  .notice.ok { background: var(--sage-tint); color: var(--sage-ink); }
-  .quote { position: relative; padding: 24px 0; font: 400 30px/1.35 var(--serif); max-width: 36rem; }
-  .glow { position: absolute; inset: -40px -32px auto; height: 220px; pointer-events: none;
-    background: radial-gradient(60% 50% at 12% 0%, rgb(240 190 90 / .24), transparent 70%); animation: in .6s ease-out both; }
-  @keyframes in { from { opacity: 0 } }
-  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
-  .moods { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; list-style: none; padding: 0; margin: 20px 0 0; }
-  @media (min-width: 560px) { .moods { grid-template-columns: repeat(3, 1fr); } }
-  @media (min-width: 760px) { .moods { grid-template-columns: repeat(4, 1fr); } }
-  .chip { width: 100%; min-height: 44px; border: 0; border-radius: 999px; background: var(--surface); padding: 8px 16px; text-align: left; font: 16px var(--sans); color: var(--ink); cursor: pointer; }
-  .chip:hover { background: var(--plum-tint); }
-  .card { background: var(--sage-tint); border-radius: 24px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
-  .panel { background: var(--surface); border-radius: 24px; padding: 24px; }
-  .list { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--hairline); }
-  .list > li { border-bottom: 1px solid var(--hairline); }
-  .entry-link { display: block; padding: 18px 12px; margin: 0 -12px; border-radius: 12px; color: inherit; text-decoration: none; }
-  .entry-link:hover { background: var(--surface); }
-  .entry-title { font: 500 21px var(--serif); margin-top: 2px; }
-  .excerpt { color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .sheet { position: relative; overflow: hidden; background: var(--surface); margin: 0 -20px; padding: 32px 20px; }
-  @media (min-width: 768px) { .sheet { margin: 0; border-radius: 24px; padding: 48px; box-shadow: 0 1px 0 var(--hairline), 0 24px 48px -32px rgb(47 34 54 / .35); } }
-  .sheet .glow { inset: 0; height: auto; }
-  .sheet-meta { position: relative; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; font-size: 14px; color: var(--ink-soft); align-items: center; }
-  .title-in { width: 100%; border: 0; background: transparent; font: 500 36px var(--serif); color: var(--ink); padding: 0; }
-  .body-in { width: 100%; max-width: 38rem; border: 0; background: transparent; resize: none; font: 18px/1.75 var(--serif); color: var(--ink); padding: 0; min-height: 12rem; }
-  @media (min-width: 768px) { .body-in { font-size: 21px; } }
-  .title-in::placeholder, .body-in::placeholder { color: rgb(101 86 107 / .65); }
-  .photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; list-style: none; padding: 0; margin: 0; }
-  @media (min-width: 560px) { .photos { grid-template-columns: repeat(3, 1fr); } }
-  .photos img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; display: block; }
-  .bars { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-  .bars li { display: grid; grid-template-columns: 9.5rem 1fr; gap: 12px; align-items: center; padding: 0 4px; border-radius: 8px; }
-  .bars li:hover { background: rgb(230 220 226 / .5); }
-  .bar { display: inline-block; height: 16px; background: var(--bar); border-radius: 0 4px 4px 0; vertical-align: middle; margin-right: 8px; }
-  .num { font-size: 14px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
-  table { border-collapse: collapse; margin-top: 12px; } td, th { text-align: left; padding: 4px 24px 4px 0; border-bottom: 1px solid var(--hairline); }
-  details summary { cursor: pointer; color: var(--plum); }
-  fieldset { border: 0; padding: 0; margin: 0; } legend { font-weight: 600; margin-bottom: 4px; }
-  .radios { display: flex; flex-wrap: wrap; gap: 4px 20px; } .radios label { display: flex; gap: 8px; align-items: center; min-height: 44px; }
-  input[type=radio] { width: 20px; height: 20px; accent-color: var(--plum); }
-  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--plum); display: inline-block; animation: pulse 1s infinite alternate; }
-  @keyframes pulse { to { opacity: .3 } }
-  audio { width: 100%; }
-  label.chip { display: flex; align-items: center; gap: 8px; }
-  .chip:has(input:checked) { background: var(--plum); color: #fff; } .chip:has(input:checked) input { accent-color: #fff; }
-  .chip input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--plum); }
-  .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex: none; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .15); }
-  .moodrow { display: flex; flex-wrap: wrap; gap: 4px 14px; } .mood { display: inline-flex; align-items: center; gap: 6px; }
-  .tag { display: inline-block; padding: 0 8px; border-radius: 999px; background: var(--plum-tint); color: var(--plum); font-size: 13px; font-weight: 600; vertical-align: middle; }
-  .body-text { white-space: pre-wrap; font: 18px/1.75 var(--serif); max-width: 38rem; }
-  /* Calendar: kept basic on purpose for now. */
-  .cal { width: 100%; max-width: 28rem; table-layout: fixed; margin: 0; }
-  .cal th, .cal td { padding: 2px; border: 0; text-align: center; } .cal th { font-size: 13px; font-weight: 400; color: var(--ink-soft); }
-  .cal a { display: block; height: 40px; line-height: 40px; border-radius: 6px; color: var(--ink); text-decoration: none; }
-  .cal a:hover { box-shadow: inset 0 0 0 2px var(--field); } .cal a[aria-current] { font-weight: 700; text-decoration: underline; }
-  .cal a.sel { box-shadow: inset 0 0 0 3px var(--ink); }
-  .diff { display: grid; gap: 16px; } @media (min-width: 560px) { .diff { grid-template-columns: 1fr 1fr; } }
-  .snap { margin: 0; } .snap dt { font-weight: 600; margin-top: 8px; } .snap dd { margin: 0; }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6eff2; --raised: #fffafc; --raised-2: #ece2e9; --well: #fffafc; --line: #e3d6de;
+      --ink: #2b1d30; --ink-soft: #685670; --field: #8c7a92;
+      --lamp: #f0be5a; --flame: #fff6df; --link: #2b1d30; --focus: #6b3f7d; --act: #6b3f7d; --on-act: #fff8f2;
+      --today: #b0721c;
+      --danger: #a3352a;
+      --ok-bg: #f7ead3; --ok-ink: #5b3d0e; --warn-bg: #fbe3df; --warn-ink: #7d2a20;
+      --chip: #fffafc; --veil: #f6eff2; --lift: 0 12px 26px -12px rgb(43 29 48 / .45);
+      --pool: .42;
+      --w-text: 400; --w-mid: 500; --w-head: 500; --w-quote: 380;
+      color-scheme: light;
+    }
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  /* No 100vh shell: in an installed iPhone app 100vh includes the status bar, so short pages would scroll. The html background fills the rest. */
+  html { background: var(--bg); color: var(--ink); -webkit-text-size-adjust: 100%; text-size-adjust: 100%;
+    scroll-padding-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom) + 16px); }
+  body { margin: 0; font: var(--w-text) 17px/1.5 var(--sans); -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  @media (prefers-color-scheme: light) { body { -webkit-font-smoothing: auto; -moz-osx-font-smoothing: auto; } }
+  a, button, label, summary, input, select, textarea { touch-action: manipulation; } /* a quick double tap toggles a chip instead of zooming */
+  ::selection { background: color-mix(in srgb, var(--ink) 26%, transparent); }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+  a { color: var(--link); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  /* Atkinson's zero is slashed, which makes dates, times and counts read like code, so numerals are set in Literata. */
+  .n, .count, .num, #clock { font-family: var(--serif); font-variant-numeric: lining-nums tabular-nums; }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2 { font-family: var(--serif); font-weight: var(--w-head); letter-spacing: -0.012em; text-wrap: balance; }
+  h1 { font-size: 30px; line-height: 1.15; }
+  h2 { font-size: 23px; line-height: 1.25; }
+  h3 { font: 600 17px/1.35 var(--sans); }
+  b, strong { font-weight: 600; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  .ic { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- page frame ---------- */
+  main { position: relative; isolation: isolate; max-width: 38rem; margin: 0 auto; display: flex; flex-direction: column; gap: 28px;
+    padding: calc(env(safe-area-inset-top) + 12px) var(--gx-r) calc(var(--tabbar) + env(safe-area-inset-bottom) + 40px) var(--gx); }
+  body.editing main { padding-bottom: 0; }
+
+  /* Tab bar: thumb-reachable, quiet, with one lit item for writing. Hidden in the editor and while typing. */
+  .tabbar { position: fixed; z-index: 20; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr);
+    padding: 6px max(6px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+    background: var(--veil); box-shadow: 0 -1px 0 var(--line); }
+  .tabbar a { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 56px; border-radius: 16px;
+    color: var(--ink-soft); font: 600 12px/1.1 var(--sans); letter-spacing: .01em; text-decoration: none;
+    -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  .tabbar .ic { width: 26px; height: 26px; stroke-width: 1.7; }
+  .tabbar a[aria-current="page"] { color: var(--ink); }
+  .tabbar a[aria-current="page"] .fill { fill: currentColor; fill-opacity: .2; }
+  .tabbar a[aria-current="page"]::after { content: ""; position: absolute; left: 50%; bottom: 1px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: currentColor; }
+  .tabbar .write { color: var(--ink); }
+  .tabbar .nib { display: grid; place-items: center; width: 48px; height: 30px; border-radius: 999px; background: var(--act); color: var(--on-act); }
+  .tabbar .nib .ic { width: 21px; height: 21px; stroke-width: 1.9; }
+  .tabbar a:active { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+  body.editing .tabbar { display: none; }
+  @media (pointer: coarse) {
+    body:has(main :is(input[type=text], input[type=number], input[type=date], textarea, select):focus) .tabbar { display: none; }
+  }
+  @media (min-width: 720px) {
+    .tabbar { left: 50%; right: auto; bottom: 16px; width: min(36rem, calc(100% - 32px)); transform: translateX(-50%); padding: 6px; border-radius: 24px;
+      box-shadow: 0 0 0 1px var(--line), 0 18px 40px -24px rgb(0 0 0 / .6); }
+    main { padding-bottom: calc(var(--tabbar) + 72px); }
+  }
+
+  /* ---------- shared pieces ---------- */
+  .hint { font-size: 15px; line-height: 1.45; color: var(--ink-soft); }
+  .soft { color: var(--ink-soft); }
+  .pagehead { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; margin-top: 10px; }
+  .titleblock { margin-top: 10px; }
+  .backbar + .titleblock { margin-top: 0; }
+  .lede { margin-top: 10px; color: var(--ink-soft); max-width: 32rem; }
+  .textbtn { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 12px; margin: 0 -12px; border-radius: 12px;
+    font-weight: 600; color: var(--link); text-decoration: none; }
+  .textbtn:active, .iconbtn:active { background: var(--raised); }
+  .textbtn .ic { width: 22px; height: 22px; }
+  .textbtn.u { text-decoration: underline; text-underline-offset: 4px; text-decoration-color: color-mix(in srgb, currentColor 50%, transparent); }
+  .back { margin-left: -14px; padding-left: 6px; min-width: 0; }
+  .back .ic { stroke-width: 2; }
+  .back > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .iconbtn { display: inline-grid; place-items: center; width: 44px; height: 44px; flex: none; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--ink-soft); cursor: pointer; }
+  .iconbtn.danger { color: var(--danger); }
+  .count { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 7px; margin-left: 6px; border-radius: 999px;
+    background: var(--raised-2); color: var(--ink); font-size: 14px; font-weight: 600; }
+  /* Pushed pages (an entry, the trash, settings) keep their way back in reach: a solid bar that sticks to the top. */
+  .backbar, .edit-top { position: sticky; top: 0; z-index: 10; margin: calc(-12px - env(safe-area-inset-top)) calc(-1 * var(--gx-r)) 0 calc(-1 * var(--gx));
+    padding: env(safe-area-inset-top) var(--gx-r) 0 var(--gx); background: var(--veil); transition: box-shadow .2s; }
+  .backbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: calc(56px + env(safe-area-inset-top)); margin-bottom: -8px; }
+  html.scrolled :is(.backbar, .edit-top) { box-shadow: 0 1px 0 var(--line); }
+  html:has(:is(.backbar, .edit-top)) { scroll-padding-top: calc(env(safe-area-inset-top) + 68px); } /* a focused field never hides under the bar */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; padding: 0 22px; border: 0; border-radius: 16px;
+    font: 600 17px/1.2 var(--sans); text-align: center; text-decoration: none; cursor: pointer; transition: background-color .25s, color .25s, transform .1s; }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  .btn .ic { width: 20px; height: 20px; stroke-width: 2; }
+  .btn.primary { background: var(--act); color: var(--on-act); }
+  .btn.primary:disabled { background: var(--raised-2); color: var(--ink-soft); cursor: default; }
+  .btn.secondary { background: var(--raised-2); color: var(--ink); }
+  .btn.secondary:disabled { color: var(--ink-soft); cursor: default; }
+  .btn.quiet { min-height: 44px; padding: 0 12px; background: none; color: var(--ink); }
+  .btn.quiet:active { background: var(--raised); }
+  .btn.danger { color: var(--danger); }
+  .btn.small { min-height: 44px; padding: 0 16px; font-size: 16px; }
+  .btn.wide { width: 100%; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .notice { border-radius: 16px; padding: 14px 16px; background: var(--warn-bg); color: var(--warn-ink); font-size: 16px; line-height: 1.45; }
+  .notice.ok { background: var(--ok-bg); color: var(--ok-ink); }
+  .notice a { color: inherit; text-decoration: underline; }
+  .tag { display: inline-block; padding: 4px 9px; border-radius: 999px; background: var(--raised-2); color: var(--ink-soft); font: 600 13px/1.1 var(--sans); vertical-align: middle; }
+  .empty { color: var(--ink-soft); }
+  .emptytitle { font: var(--w-head) 23px/1.3 var(--serif); }
+  fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+  legend { padding: 0; font-weight: 600; }
+  label.f { display: flex; flex-direction: column; gap: 8px; font-weight: 600; }
+  input[type=text], input[type=date], input[type=number], select, textarea.in {
+    -webkit-appearance: none; appearance: none; width: 100%; min-height: 50px; padding: 11px 14px; border: 1.5px solid var(--field); border-radius: 14px;
+    background: var(--bg); color: var(--ink); font: 400 17px/1.4 var(--sans); }
+  textarea.in { resize: vertical; }
+  input[type=number], input[type=date], #agepick { font-family: var(--serif); font-variant-numeric: lining-nums tabular-nums; }
+  input[type=date] { max-width: 16rem; margin-top: 10px; }
+  input::-webkit-date-and-time-value { text-align: left; }
+  select { padding-right: 40px; background: var(--bg) no-repeat right 14px center / 16px 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 6 4.5 4.5L12.5 6' fill='none' stroke='%23b9a7b1' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+  @media (prefers-color-scheme: light) {
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='m3.5 6 4.5 4.5L12.5 6' fill='none' stroke='%23685670' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+    input[type=text], input[type=date], input[type=number], select, textarea.in { background-color: var(--raised); }
+  }
+  details > summary { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; color: var(--link); font-weight: 600; list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before { content: ""; width: 7px; height: 7px; margin: 0 3px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .2s; }
+  details[open] > summary::before { transform: rotate(45deg); }
+
+  /* Mood chips: each mood is a small light. Choosing one kindles it. The native checkbox covers the chip, invisibly. */
+  .moods { display: flex; flex-wrap: wrap; gap: 8px 6px; list-style: none; margin: 16px 0 0; padding: 0; }
+  /* On Home the twelve moods sit in four full rows of three: no chip is narrower than about a quarter of the row,
+     so a fourth never fits, and each row stretches to the column's edge on wider phones. */
+  .checkin .moods li { display: flex; flex: 1 0 26%; }
+  .checkin .chip { flex: 1; justify-content: center; }
+  .chip { position: relative; display: inline-flex; align-items: center; gap: 7px; min-height: 48px; padding: 0 13px 0 11px; border-radius: 999px;
+    background: var(--chip); color: var(--ink); font: 500 16px/1.2 var(--sans); cursor: pointer; -webkit-user-select: none; user-select: none;
+    transition: background-color .25s, box-shadow .25s; }
+  .chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; -webkit-appearance: none; appearance: none; border-radius: inherit; }
+  .chip .dot { position: relative; width: 12px; height: 12px; flex: none; border-radius: 50%; background: var(--mood); transition: transform .3s cubic-bezier(.3, 1.5, .5, 1); }
+  .chip .dot::after { content: ""; position: absolute; left: 4.2px; top: 2.2px; width: 2.6px; height: 5.4px; border: solid var(--on); border-width: 0 1.4px 1.4px 0; transform: rotate(45deg); opacity: 0; }
+  .chip:has(input:checked) { background: color-mix(in srgb, var(--mood) 26%, var(--chip)); box-shadow: inset 0 0 0 2px var(--mood), 0 0 22px -8px var(--mood); }
+  .chip input:checked + .dot { transform: scale(1.6); } /* the lit dot and its check work even where :has() doesn't */
+  .chip input:checked + .dot::after { opacity: 1; }
+  .chip:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .chip:active { transform: scale(.98); }
+  @media (prefers-color-scheme: light) {
+    .chip { box-shadow: inset 0 0 0 1px var(--line); }
+    .chip .dot { box-shadow: inset 0 0 0 1px rgb(43 29 48 / .18); }
+    .chip:has(input:checked) { background: color-mix(in srgb, var(--mood) 32%, #fff); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--mood) 62%, var(--ink)); }
+  }
+  .moodrow { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 15px; color: var(--ink-soft); }
+  .mood { display: inline-flex; align-items: center; gap: 7px; }
+  .swatch { display: inline-block; width: 10px; height: 10px; flex: none; border-radius: 50%; }
+  @media (prefers-color-scheme: light) { .swatch { box-shadow: inset 0 0 0 1px rgb(43 29 48 / .2); } }
+
+  /* ---------- home: the lamp ---------- */
+  .hometop { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; margin-right: -10px; }
+  .dateline { font: 600 15px/1.3 var(--sans); letter-spacing: 0; color: var(--ink-soft); }
+  .hearth { --glow: var(--lamp); position: relative; text-align: center; padding: 0 0 8px; transition: --glow .8s ease; }
+  /* The pool of light: a warm core that never changes, inside an aura that takes your moods' colors (kept warm by mixing in lamplight).
+     Many eased stops instead of two, so the falloff has no visible rings. */
+  .pool { --aura: color-mix(in oklab, var(--glow) 70%, var(--lamp)); --a: var(--pool);
+    position: absolute; z-index: -1; top: -380px; height: 980px; left: calc(-1 * var(--gx)); right: calc(-1 * var(--gx-r)); pointer-events: none; opacity: .9;
+    background:
+      radial-gradient(circle 150px at 50% 428px, color-mix(in srgb, var(--lamp) calc(var(--a) * 85%), transparent) 0%,
+        color-mix(in srgb, var(--lamp) calc(var(--a) * 50%), transparent) 22%, color-mix(in srgb, var(--lamp) calc(var(--a) * 24%), transparent) 45%,
+        color-mix(in srgb, var(--lamp) calc(var(--a) * 8%), transparent) 70%, transparent 100%),
+      radial-gradient(ellipse 360px 380px at 50% 428px, color-mix(in srgb, var(--aura) calc(var(--a) * 100%), transparent) 0%,
+        color-mix(in srgb, var(--aura) calc(var(--a) * 72%), transparent) 14%, color-mix(in srgb, var(--aura) calc(var(--a) * 48%), transparent) 30%,
+        color-mix(in srgb, var(--aura) calc(var(--a) * 28%), transparent) 47%, color-mix(in srgb, var(--aura) calc(var(--a) * 13%), transparent) 65%,
+        color-mix(in srgb, var(--aura) calc(var(--a) * 4%), transparent) 83%, transparent 100%); }
+  /* Morning: colored light over pale paper reads as a stain, so the day version is one soft, mostly sunlit wash. */
+  @media (prefers-color-scheme: light) {
+    .pool { --aura: color-mix(in oklab, var(--glow) 38%, var(--lamp));
+      background: radial-gradient(ellipse 350px 370px at 50% 428px, color-mix(in srgb, var(--aura) calc(var(--a) * 100%), transparent) 0%,
+        color-mix(in srgb, var(--aura) calc(var(--a) * 74%), transparent) 12%, color-mix(in srgb, var(--aura) calc(var(--a) * 50%), transparent) 26%,
+        color-mix(in srgb, var(--aura) calc(var(--a) * 30%), transparent) 42%, color-mix(in srgb, var(--aura) calc(var(--a) * 15%), transparent) 60%,
+        color-mix(in srgb, var(--aura) calc(var(--a) * 5%), transparent) 80%, transparent 100%); }
+  }
+  /* Wider screens: the pool stops at the column, so fade its sides instead of showing an edge. */
+  @media (min-width: 640px) {
+    .pool { -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent); mask-image: radial-gradient(closest-side, #000 55%, transparent); }
+  }
+  .lamp { display: grid; place-items: center; height: 96px; }
+  .flame { width: 24px; height: 24px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 42%, var(--flame) 0 22%, color-mix(in srgb, var(--flame) 40%, var(--lamp)) 46%, var(--lamp) 80%);
+    box-shadow: 0 0 0 7px color-mix(in srgb, var(--lamp) 14%, transparent), 0 0 26px 9px color-mix(in srgb, var(--lamp) 50%, transparent),
+      0 0 80px 30px color-mix(in srgb, var(--glow) 26%, transparent); }
+  .quote { max-width: 17em; margin: 4px auto 0; font: italic var(--w-quote) 27px/1.32 var(--serif); letter-spacing: -0.005em; text-wrap: balance; }
+  @keyframes kindle { 0% { transform: scale(1); } 28% { transform: scale(1.75); } 100% { transform: scale(1); } }
+  @keyframes swell { 0% { opacity: .9; } 30% { opacity: 1; } 100% { opacity: .9; } }
+  .hearth.kindle .flame { animation: kindle 1.4s cubic-bezier(.2, .8, .2, 1); }
+  .hearth.kindle .pool { animation: swell 1.8s ease-out; }
+  /* Short phones: the lamp steps closer so Save check-in stays above the tab bar. */
+  @media (max-height: 720px) {
+    main:has(.hearth) { gap: 20px; }
+    .lamp { height: 64px; }
+    .pool { top: -396px; }
+    .quote { font-size: 25px; }
+  }
+  .checkin legend { display: block; }
+  .checkin h2 { font-size: clamp(21px, 5.85vw, 23px); } /* the question stays on one line from 360px up */
+  .checkin legend .hint { display: block; margin-top: 4px; font-weight: 400; }
+  .savewrap { min-height: 50px; margin-top: 20px; }
+  /* Once you've chosen a mood, Save check-in stays in reach: if you scroll it out of view, it waits above the tab bar until you save. */
+  .checkin.picking.away #checkin { position: fixed; z-index: 15; left: var(--gx); right: var(--gx-r); bottom: calc(var(--tabbar) + env(safe-area-inset-bottom) + 12px);
+    width: auto; max-width: calc(38rem - 40px); margin: 0 auto; box-shadow: var(--lift); }
+  main:has(.checkin.picking) { padding-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom) + 104px); } /* so the waiting button never hides the end of the page */
+  @media (pointer: coarse) { body:has(main :is(input[type=text], textarea):focus) .checkin.away #checkin { position: static; } }
+  @media (min-width: 720px) { .checkin.picking.away #checkin { bottom: calc(var(--tabbar) + 40px); } }
+  #moodmsg:not(:empty) { margin-top: 14px; }
+  #moodmsg:not(:empty) + .textbtn { display: none; } /* the Saved message has its own link to your history */
+  .checkin .textbtn { margin-top: 8px; }
+  .followups { display: flex; flex-direction: column; gap: 16px; }
+  .card { display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: 24px; background: var(--raised); }
+  .card h3 { font-size: 15px; color: var(--ink-soft); }
+  .fu-text { font: italic var(--w-text) 21px/1.4 var(--serif); }
+  .card label.f { font-size: 15px; }
+  .card textarea.in { background: var(--bg); }
+  .card .actions .btn { flex: 1 1 auto; }
+  .privacy { font-size: 14px; color: var(--ink-soft); max-width: 26rem; }
+
+  /* ---------- journal ---------- */
+  .month { display: flex; flex-direction: column; gap: 10px; }
+  .monthnav { display: flex; align-items: center; gap: 4px; min-height: 44px; }
+  .monthnav h2 { flex: 1; font-size: 22px; }
+  .monthnav .btn { margin-right: 6px; }
+  .monthnav .iconbtn { color: var(--ink); }
+  .cal { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .cal th { padding: 0 0 6px; font: 600 13px/1 var(--sans); color: var(--ink-soft); text-align: center; }
+  .cal td { padding: 1px 0; text-align: center; }
+  /* A day you wrote is a small light in the blended color of its moods; other days are just quiet numbers. */
+  .cal a { position: relative; z-index: 0; display: grid; place-items: center; width: 48px; max-width: 100%; height: 48px; margin: 0 auto; border-radius: 50%;
+    color: var(--ink-soft); font: 500 16px/1 var(--serif); font-variant-numeric: lining-nums tabular-nums; text-decoration: none; }
+  .cal a::before { content: ""; position: absolute; z-index: -1; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; }
+  .cal a.lit { color: var(--on, var(--ink)); font-weight: 700; font-size: 19px; }
+  .cal a.lit::before { background: var(--day, var(--raised-2)); box-shadow: 0 0 18px -5px var(--day, transparent); }
+  .cal a[aria-current="date"] { color: var(--ink); font-weight: 700; }
+  .cal a.lit[aria-current="date"] { color: var(--on, var(--ink)); }
+  .cal a[aria-current="date"]::before { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--today); }
+  .cal a.sel::before { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4.5px var(--ink); }
+  .cal a.sel[aria-current="date"]::before { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4.5px var(--today); } /* today keeps its light when selected */
+  .cal a:active::before { background: var(--day, var(--raised)); }
+  .cal a:focus-visible { outline-offset: 0; }
+  .cal a.tapped:focus { outline: none; } /* picking a day with a tap moves focus there quietly; keyboards still get the ring */
+  @media (prefers-color-scheme: light) {
+    .cal a.lit::before { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--day, var(--raised-2)) 55%, var(--ink)); }
+    /* Repeated after the lit edge so today's ring and the chosen day's ring still win. */
+    .cal a[aria-current="date"]::before { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--today); }
+    .cal a.sel::before { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4.5px var(--ink); }
+    .cal a.sel[aria-current="date"]::before { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4.5px var(--today); }
+  }
+  .day { display: flex; flex-direction: column; gap: 10px; }
+  .day h2 { font-size: 21px; }
+  .dayadd { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 2px; }
+  .entries { list-style: none; margin: 0; padding: 0; }
+  .entries > li + li { border-top: 1px solid var(--line); }
+  /* Each entry carries its own light beside its title, the same light its day gets in the calendar. */
+  .entry-link, .trashlist > li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 6px 14px; }
+  .entry-link > *, .trashlist > li > * { grid-column: 2; }
+  .entry-link > .light { grid-column: 1; grid-row: 2; margin-top: 7px; }
+  .entry-link { margin: 0 -12px; padding: 14px 12px 16px; border-radius: 18px; color: inherit; text-decoration: none; }
+  .entry-link:active { background: var(--raised); }
+  .light { width: 14px; height: 14px; border-radius: 50%; background: var(--day, var(--raised-2)); box-shadow: 0 0 12px -2px var(--day, transparent); }
+  @media (prefers-color-scheme: light) { .light { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--day, var(--raised-2)) 55%, var(--ink)); } }
+  .entry-meta { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--ink-soft); }
+  .entry-title { font: var(--w-mid) 21px/1.3 var(--serif); overflow-wrap: anywhere; }
+  .excerpt { color: var(--ink-soft); font: var(--w-text) 16px/1.5 var(--serif); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+  .empty.row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+  /* The mood key sits after the day, so picking a day shows its entries without scrolling, even on small phones. */
+  .legend { display: flex; flex-direction: column; gap: 6px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .legend .moodrow { gap: 2px 12px; font-size: 14px; }
+  .legend .hint { font-size: 14px; }
+  @media (max-height: 720px) {
+    main:has(.cal) { gap: 20px; }
+    main:has(.cal) .pagehead { margin-top: 0; }
+    .cal a { height: 44px; }
+    .cal a::before { width: 38px; height: 38px; margin: -19px 0 0 -19px; }
+  }
+
+  /* ---------- one entry ---------- */
+  .entry { display: flex; flex-direction: column; gap: 14px; }
+  .entry .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 15px; color: var(--ink-soft); }
+  .entry h1 { overflow-wrap: anywhere; }
+  .body-text { margin-top: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font: var(--w-text) 20px/1.7 var(--serif); max-width: 34rem; }
+  .photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; list-style: none; margin: 6px 0 0; padding: 0; }
+  @media (min-width: 560px) { .photos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .photos li { display: flex; flex-direction: column; gap: 4px; }
+  .photos a { display: block; border-radius: 16px; }
+  .photos img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 16px; }
+  .voices { list-style: none; margin: 0; padding: 0; }
+  .voices li { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
+  .voices audio { width: 100%; }
+  #photolist:empty, #voicelist:empty { display: none; }
+  .media-del { align-self: flex-start; margin-left: -12px; }
+  .history { display: flex; flex-direction: column; gap: 6px; }
+  .hist { list-style: none; margin: 0; padding: 0; }
+  .hist > li { display: flex; flex-direction: column; gap: 12px; padding: 12px 0 18px; }
+  .hist > li + li { border-top: 1px solid var(--line); padding-top: 18px; }
+  .diff { display: grid; gap: 12px; }
+  @media (min-width: 560px) { .diff { grid-template-columns: 1fr 1fr; } }
+  .diff > div { padding: 14px 16px; border-radius: 18px; background: var(--raised); }
+  .diff > div > .hint { font-weight: 600; }
+  .snap { margin: 0; } .snap dt { margin-top: 10px; font-size: 14px; font-weight: 600; color: var(--ink-soft); } .snap dd { margin: 2px 0 0; overflow-wrap: anywhere; }
+  .snap .tag { margin-left: 4px; background: var(--ok-bg); color: var(--ok-ink); }
+  .entry-end { margin-left: -12px; }
+
+  /* ---------- editor ---------- */
+  .editor { display: flex; flex-direction: column; gap: 22px; }
+  /* A solid top bar with Cancel and Save. With the keyboard up, iOS pans a smaller visible area over a page that doesn't move,
+     so editor() listens to visualViewport and sets --vv-top to keep the bar, and any error under it, at the top of what you see. */
+  .edit-top { top: var(--vv-top, 0px); margin-bottom: -6px; }
+  .edit-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; min-height: 56px; }
+  .edit-bar h1 { font: 600 17px/1.2 var(--sans); letter-spacing: 0; }
+  .edit-bar .textbtn { justify-self: start; }
+  #savetop { justify-self: end; min-height: 44px; margin-right: -12px; padding: 0 14px; border-radius: 999px; background: none; color: var(--link); }
+  /* Keyboard up: the bottom dock steps back into the page, so the top Save becomes the lit one. */
+  @media (pointer: coarse) { .editor:has(:is(input[type=text], textarea):focus) #savetop { margin-right: -4px; background: var(--act); color: var(--on-act); } }
+  #err:not(:empty) { padding-bottom: 12px; }
+  #err:empty { display: none; }
+  /* This entry's light: a small version of its day in the calendar, lit with the blend of the moods you choose. */
+  .edit-when { display: flex; align-items: center; gap: 14px; }
+  .daylight { display: grid; place-items: center; width: 38px; height: 38px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--field) 60%, transparent);
+    color: var(--ink-soft); font: 700 16px/1 var(--serif); font-variant-numeric: lining-nums tabular-nums; transition: background-color .5s, color .5s, box-shadow .5s; }
+  .daylight.lit { background: var(--day); color: var(--on); box-shadow: 0 0 18px -5px var(--day); }
+  @media (prefers-color-scheme: light) { .daylight.lit { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--day) 55%, var(--ink)); } }
+  .when { font-weight: 600; }
+  .when .tag { margin-left: 6px; }
+  .edit-when .hint { margin-top: 2px; font-size: 14px; }
+  .field { display: flex; flex-direction: column; gap: 2px; }
+  .field > label, .addmood > label { font-size: 14px; font-weight: 600; color: var(--ink-soft); }
+  .title-in, .body-in { -webkit-appearance: none; appearance: none; width: 100%; border: 0; border-radius: 0; background: transparent; color: var(--ink); }
+  .title-in { padding: 4px 0 10px; font: var(--w-head) 30px/1.2 var(--serif); letter-spacing: -0.012em; box-shadow: inset 0 -1.5px 0 var(--field); }
+  /* The description gets a faint sheet to write on. Its edge stays at 3:1 or more, so you can find it in the dark. */
+  .body-in { min-height: 10.5rem; margin-top: 6px; padding: 12px 16px; border-radius: 18px; background: var(--well); box-shadow: inset 0 0 0 1px var(--field);
+    resize: none; overflow: hidden; font: var(--w-text) 20px/1.7 var(--serif); }
+  .title-in::placeholder, .body-in::placeholder { color: var(--ink-soft); opacity: 1; }
+  .title-in:focus-visible, .body-in:focus-visible { outline: none; }
+  .title-in:focus-visible { box-shadow: inset 0 -2.5px 0 var(--focus); }
+  .body-in:focus-visible { box-shadow: inset 0 0 0 2px var(--focus); }
+  /* After a failed save, the parts still missing say so. */
+  .editor:has(#err .notice) .field:has(#body:placeholder-shown) > label,
+  .editor:has(#err .notice) .moodfield:not(:has(#moodlist input:checked)) > legend { color: var(--danger); }
+  .editor:has(#err .notice) #body:placeholder-shown:not(:focus) { box-shadow: inset 0 0 0 1.5px var(--danger); }
+  .moodfield legend { display: block; }
+  .moodfield legend .hint { display: block; margin-top: 2px; font-weight: 400; }
+  .moodfield .moods { margin-top: 12px; }
+  .addmood { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+  .addmood .inline { display: flex; gap: 8px; }
+  .addmood input { flex: 1; min-width: 0; }
+  .addmood .btn { flex: none; min-height: 50px; padding: 0 18px; }
+  .media { display: flex; flex-direction: column; gap: 12px; padding-top: 6px; }
+  .media h2 { font-size: 21px; }
+  .addrows { display: flex; flex-direction: column; border-radius: 20px; background: var(--raised); overflow: hidden; }
+  .actionrow { position: relative; display: flex; align-items: center; gap: 14px; width: 100%; min-height: 62px; margin: 0; padding: 10px 16px; border: 0;
+    background: transparent; color: var(--ink); font: 600 17px/1.3 var(--sans); text-align: left; cursor: pointer; }
+  .addrows > * + * { border-top: 1px solid var(--line); }
+  .actionrow:active { background: var(--raised-2); }
+  .actionrow:disabled { color: var(--ink-soft); cursor: default; }
+  .actionrow > .ic { color: var(--ink-soft); }
+  .actionrow > span { display: flex; flex-direction: column; gap: 2px; }
+  .actionrow .hint { font-size: 14px; font-weight: 400; }
+  .actionrow input[type=file] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+  .actionrow:focus-visible, .actionrow:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: -3px; }
+  .rec { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 62px; padding: 8px 10px 8px 16px; }
+  .rec-live { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .rec-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); display: inline-block; animation: pulse 1s infinite alternate; }
+  @keyframes pulse { to { opacity: .3; } }
+  /* Save also lives at the bottom, in thumb reach. While the keyboard is up it steps back into the page instead of floating over it. */
+  .dock { position: sticky; bottom: 0; z-index: 5; margin: 4px calc(-1 * var(--gx-r)) 0 calc(-1 * var(--gx));
+    padding: 12px var(--gx-r) calc(12px + env(safe-area-inset-bottom)) var(--gx); background: var(--veil); box-shadow: 0 -1px 0 var(--line); }
+  @media (pointer: coarse) { .editor:has(:is(input[type=text], textarea):focus) .dock { position: static; } }
+
+  /* ---------- trash ---------- */
+  .trashlist { list-style: none; margin: 0; padding: 0; }
+  .trashlist > li { padding: 18px 0; border-top: 1px solid var(--line); }
+  .trashlist > li > .light { grid-column: 1; grid-row: 1; margin-top: 7px; }
+  .trashlist .entry-title { margin-bottom: 2px; }
+  .trashlist .actions { gap: 4px 8px; margin-top: 6px; }
+  .left { color: var(--ink); font-weight: 600; }
+  .tools { padding-top: 6px; }
+  .tools .stack { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+  .tools .btn { align-self: flex-start; }
+
+  /* ---------- mood ---------- */
+  .chart { margin: 0; display: flex; flex-direction: column; gap: 16px; }
+  .bars { display: flex; flex-direction: column; gap: 4px; list-style: none; margin: 0; padding: 0; }
+  .bars li { display: grid; grid-template-columns: 8.5rem 1fr; align-items: center; gap: 10px; min-height: 34px; }
+  .bar-label { display: inline-flex; align-items: center; gap: 9px; }
+  .track { display: flex; align-items: center; gap: 8px; }
+  /* Each check-in is one segment in its mood's own color, with a 2px seam between segments. */
+  .bar { flex: none; width: calc((100% - 2.5rem) * var(--f)); height: 12px; border-radius: 0 3px 3px 0;
+    background: repeating-linear-gradient(90deg, transparent 0 2px, var(--p) 2px calc(100% / var(--n))); }
+  .num { font-size: 15px; color: var(--ink-soft); }
+  .chart table { border-collapse: collapse; margin-top: 8px; }
+  .chart td, .chart th { padding: 8px 28px 8px 0; text-align: left; border-bottom: 1px solid var(--line); }
+  .chart td + td { font-family: var(--serif); font-variant-numeric: lining-nums tabular-nums; }
+  .byday { display: flex; flex-direction: column; gap: 22px; }
+  .byday h3 { font-size: 16px; }
+  .byday ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .byday li { display: flex; gap: 14px; }
+  .byday .t { width: 4.8rem; flex: none; color: var(--ink-soft); font-size: 15px; padding-top: 1px; }
+
+  /* ---------- goals & worries ---------- */
+  .addform { display: flex; flex-direction: column; gap: 20px; padding: 20px; border-radius: 24px; background: var(--raised); }
+  .addform textarea.in, .addform input[type=date] { background-color: var(--bg); }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .seg label { position: relative; display: inline-flex; border-radius: 999px; cursor: pointer; -webkit-user-select: none; user-select: none; }
+  .seg label > span { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px;
+    background: var(--raised-2); color: var(--ink); font-weight: 500; transition: background-color .2s, color .2s; }
+  .seg input { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; border-radius: inherit; }
+  .seg input:checked + span { background: var(--ink); color: var(--bg); }
+  .seg input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .addform .btn { align-self: flex-start; }
+  .items { list-style: none; margin: 6px 0 0; padding: 0; }
+  .items > li { display: flex; flex-direction: column; gap: 6px; padding: 16px 0; border-top: 1px solid var(--line); }
+  .item-text { font: var(--w-text) 19px/1.45 var(--serif); overflow-wrap: anywhere; }
+  /* Resolve leads; Postpone and Edit are plain; Delete is a quiet glyph at the far end, away from Resolve. */
+  .items .actions { gap: 0 4px; margin-top: 4px; }
+  .items .actions > .btn.secondary { margin-right: 6px; }
+  .items .actions > .end { margin: 0 -10px 0 auto; }
+  .items li > .f, .items li > fieldset { margin-top: 6px; }
+  .resolved { margin-top: -6px; }
+
+  /* ---------- settings ---------- */
+  .settings-block { display: flex; flex-direction: column; gap: 12px; }
+  .settings-block .btn { align-self: flex-start; }
+  .keep { padding: 20px; border-radius: 24px; background: var(--raised); }
+  #storage:empty, #dlmsg:empty, #restoremsg:empty, #updatemsg:empty { display: none; }
+  /* A file picker that looks like the other buttons: the real input covers it, invisibly, as in the editor's Add photos. */
+  .filebtn { position: relative; }
+  .filebtn input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .filebtn:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .notice .btn { margin-top: 12px; }
+  .file { white-space: nowrap; } /* a backup's name breaks at its hyphens otherwise */
+
+  /* ---------- getting set up: the install hint and the first-run card ---------- */
+  /* Quiet on purpose: a hairline instead of a lit card, so it never competes with the check-in above it. */
+  .setup { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px 20px; border-radius: 24px; box-shadow: inset 0 0 0 1px var(--line); }
+  .setup h2 { font-size: 20px; }
+  .setup p, .steps { font-size: 16px; line-height: 1.45; }
+  .setup .btn { align-self: flex-start; margin-top: 2px; }
+  .setup .dismiss { margin: -6px 0 -10px -12px; }
+  .steps { display: flex; flex-direction: column; gap: 6px; margin: 0; padding-left: 1.4em; }
+  .steps li { padding-left: 2px; }
+  .steps li::marker { font-family: var(--serif); color: var(--ink-soft); }
+  .drafts { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .drafts li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; }
+  .drafts .textbtn { margin-left: -10px; }
+  #draftnote .btn { margin-top: 10px; }
+
+  /* ---------- a photo, full screen ---------- */
+  .photos .open { display: block; width: 100%; padding: 0; border: 0; border-radius: 16px; background: none; cursor: zoom-in; }
+  #viewer { width: 100%; max-width: none; height: 100%; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; overscroll-behavior: contain; }
+  #viewer::backdrop { background: rgb(14 9 16 / .94); }
+  #viewer[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  #viewer img { max-width: 100%; max-height: calc(100% - 76px); object-fit: contain; border-radius: 12px; }
+  .steps .ic { width: 20px; height: 20px; margin: 0 -3px 0 -2px; vertical-align: -4px; } /* the glyphs have room built in */
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <a class="wordmark" href="#home"><span class="spark" aria-hidden="true"></span>Glimmer</a>
-    <nav aria-label="Main"><ul>
-      <li><a href="#home" data-nav="home">Home</a></li>
-      <li><a href="#journal" data-nav="journal">Journal</a></li>
-      <li><a href="#mood" data-nav="mood">Mood</a></li>
-      <li><a href="#goals" data-nav="goals">Goals &amp; worries</a></li>
-      <li><a href="#settings" data-nav="settings">Settings</a></li>
-    </ul></nav>
-  </header>
-  <main id="main"></main>
-</div>
+<main id="main"></main>
+<nav class="tabbar" aria-label="Main">
+  <a href="#home" data-nav="home"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path class="fill" d="M4.5 10.3 12 4.3l7.5 6V19a1.5 1.5 0 0 1-1.5 1.5h-3.7v-5.2H9.7v5.2H6A1.5 1.5 0 0 1 4.5 19z"/></svg><span>Home</span></a>
+  <a href="#journal" data-nav="journal"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path class="fill" d="M6.6 3.8h9.9a1.5 1.5 0 0 1 1.5 1.5v15.2H7.7A2.7 2.7 0 0 1 5 17.8V5.4a1.6 1.6 0 0 1 1.6-1.6z"/><path d="M5 17.8a2.7 2.7 0 0 1 2.7-2.7H18"/></svg><span>Journal</span></a>
+  <a href="#entry/new" class="write"><span class="nib"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5.3a2.1 2.1 0 0 1 3 0l.7.7a2.1 2.1 0 0 1 0 3L9.3 18.4l-4.3 1 1-4.3z"/><path d="m13.4 6.9 3.7 3.7"/></svg></span><span>Write</span></a>
+  <a href="#mood" data-nav="mood"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect class="fill" x="4.4" y="12.6" width="3.8" height="7" rx="1.9"/><rect class="fill" x="10.1" y="5.6" width="3.8" height="14" rx="1.9"/><rect class="fill" x="15.8" y="9.6" width="3.8" height="10" rx="1.9"/></svg><span>Mood</span></a>
+  <a href="#goals" data-nav="goals"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle class="fill" cx="12" cy="12" r="8.3"/><path d="m8.6 12.3 2.4 2.4 4.5-5"/></svg><span>Goals</span></a>
+</nav>
 
 <script>
 // Glimmer prototype: everything is saved in this browser only (localStorage for text,
@@ -178,34 +608,87 @@ const moodInfo = (label) => findMood(label) ?? { label, emoji: "", rgb: hashColo
 const blend = (labels) => { const cs = labels.map((l) => moodInfo(l).rgb); return [0, 1, 2].map((i) => Math.round(cs.reduce((t, c) => t + c[i], 0) / cs.length)); };
 const css = ([r, g, b]) => `rgb(${r} ${g} ${b})`;
 const lum = (rgb) => { const [r, g, b] = rgb.map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
-const INK = hex("#2f2236");
-const inkOn = (rgb) => { const L = lum(rgb); return (L + 0.05) / (lum(INK) + 0.05) >= 1.05 / (L + 0.05) ? css(INK) : "#fff"; }; // dark or white text, whichever reads better
-const moodTag = (label) => { const m = moodInfo(label); return `<span class="mood"><span class="swatch" style="background:${css(m.rgb)}" aria-hidden="true"></span>${m.emoji ? `<span aria-hidden="true">${m.emoji}</span>` : ""}${esc(m.label)}</span>`; };
+// Text on a mood color is black or white, whichever reads better. Pure black, because then every mood and every blend
+// of moods reaches at least 4.5:1, at any text size.
+const INK = hex("#000000");
+const inkOn = (rgb) => { const L = lum(rgb); return (L + 0.05) / (lum(INK) + 0.05) >= 1.05 / (L + 0.05) ? css(INK) : "#fff"; };
+const moodVars = (rgb) => `--mood:${css(rgb)};--on:${inkOn(rgb)}`;
+const moodTag = (label) => { const m = moodInfo(label); return `<span class="mood"><span class="swatch" style="background:${css(m.rgb)}" aria-hidden="true"></span>${esc(m.label)}</span>`; };
 const moodRow = (labels) => labels.length ? `<p class="moodrow">${labels.map(moodTag).join("")}</p>` : "";
+// An entry's light: a small lit circle in the blend of its moods, like its day in the calendar.
+const light = (labels) => `<span class="light"${labels.length ? ` style="--day:${css(blend(labels))}"` : ""} aria-hidden="true"></span>`;
+
+// ---------- icons (drawn for Glimmer, inline so they work offline) ----------
+const svg = (body) => `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
+const ICON = {
+  back: svg('<path d="M14.5 5.5 8 12l6.5 6.5"/>'),
+  next: svg('<path d="M9.5 5.5 16 12l-6.5 6.5"/>'),
+  settings: svg('<path d="M9.89 5.11 10.09 3a9.2 9.2 0 0 1 3.82 0l.2 2.11a7.2 7.2 0 0 1 1.27.53l1.63-1.36a9.2 9.2 0 0 1 2.71 2.71l-1.36 1.63a7.2 7.2 0 0 1 .53 1.27l2.11.2a9.2 9.2 0 0 1 0 3.82l-2.11.2a7.2 7.2 0 0 1-.53 1.27l1.36 1.63a9.2 9.2 0 0 1-2.71 2.71l-1.63-1.36a7.2 7.2 0 0 1-1.27.53l-.2 2.11a9.2 9.2 0 0 1-3.82 0l-.2-2.11a7.2 7.2 0 0 1-1.27-.53l-1.63 1.36a9.2 9.2 0 0 1-2.71-2.71l1.36-1.63a7.2 7.2 0 0 1-.53-1.27L3 13.91a9.2 9.2 0 0 1 0-3.82l2.11-.2a7.2 7.2 0 0 1 .53-1.27L4.28 6.99a9.2 9.2 0 0 1 2.71-2.71l1.63 1.36a7.2 7.2 0 0 1 1.27-.53z"/><circle cx="12" cy="12" r="2.6"/>'),
+  trash: svg('<path d="M4.8 6.8h14.4M9.6 6.6V5.2c0-.6.5-1.1 1.1-1.1h2.6c.6 0 1.1.5 1.1 1.1v1.4M6.9 6.8l.8 12a1.8 1.8 0 0 0 1.8 1.7h5a1.8 1.8 0 0 0 1.8-1.7l.8-12M10.3 10.6v6M13.7 10.6v6"/>'),
+  check: svg('<path d="m5.8 12.6 4 4 8.4-9"/>'),
+  plus: svg('<path d="M12 5.5v13M5.5 12h13"/>'),
+  pen: svg('<path d="M15 5.3a2.1 2.1 0 0 1 3 0l.7.7a2.1 2.1 0 0 1 0 3L9.3 18.4l-4.3 1 1-4.3z"/><path d="m13.4 6.9 3.7 3.7"/>'),
+  photo: svg('<rect x="3.5" y="5.5" width="17" height="13" rx="3"/><circle cx="9" cy="10.4" r="1.6"/><path d="m4.6 17 5-4.4 3.4 2.9 2.6-2 3.8 3.3"/>'),
+  mic: svg('<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3"/>'),
+  audio: svg('<path d="M9 17.5V6.3l10-2v11.2"/><circle cx="6.6" cy="17.5" r="2.4"/><circle cx="16.6" cy="15.5" r="2.4"/>'),
+  // Safari's own Share and More buttons, so the install steps point at what's on screen.
+  share: svg('<path d="M12 14.6V3.9M8.3 7.5 12 3.8l3.7 3.7"/><path d="M8.7 10.3H7.4a1.9 1.9 0 0 0-1.9 1.9v6.4a1.9 1.9 0 0 0 1.9 1.9h9.2a1.9 1.9 0 0 0 1.9-1.9v-6.4a1.9 1.9 0 0 0-1.9-1.9h-1.3"/>'),
+  more: svg('<path d="M6.2 12h.01M12 12h.01M17.8 12h.01" stroke-width="3.2"/>'),
+};
 
 // ---------- storage ----------
 const KEY = "glimmer-prototype-v1";
-const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) ?? {}; } catch { return {}; } };
-const db = Object.assign({ entries: [], media: [], moods: [], items: [], responses: [] }, load());
+const load = (key) => { try { return JSON.parse(localStorage.getItem(key)) ?? {}; } catch { return {}; } };
+const db = Object.assign({ entries: [], media: [], moods: [], items: [], responses: [] }, load(KEY));
 // Entries saved before moods and the trash existed: pin their logged time and start empty mood and edit lists.
 for (const e of db.entries) {
   if (!e.logged_at) { const t = new Date(e.created_at), d = parseDay(e.entry_date ?? toDay(t)); d.setHours(t.getHours(), t.getMinutes(), t.getSeconds()); e.logged_at = d.toISOString(); delete e.entry_date; }
   e.body ??= ""; e.moods ??= []; e.history ??= []; e.deleted_at ??= null;
 }
-const persist = () => localStorage.setItem(KEY, JSON.stringify(db));
+// After the first save in a session, ask the browser to keep Glimmer's storage when the phone runs low on space.
+// iPhone doesn't show a prompt: it says yes to the Home Screen app and usually no to a Safari tab.
+let keepAsked = false;
+const persist = () => {
+  localStorage.setItem(KEY, JSON.stringify(db));
+  if (!keepAsked) { keepAsked = true; navigator.storage?.persist?.().catch(() => {}); }
+};
 const uid = () => crypto.randomUUID();
+// Things about this device, not your journal: when you last saved a backup, and whether you hid the install hint.
+// They have their own key, so backups, restores and Delete everything leave them alone.
+const UI_KEY = "glimmer-ui-v1", DRAFT_KEY = "glimmer-draft-v1";
+const ui = Object.assign({}, load(UI_KEY));
+const setUi = (patch) => { Object.assign(ui, patch); try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch {} };
+const journalEmpty = () => !db.entries.length && !db.moods.length && !db.items.length;
+// Unsaved writing, one draft per editor ("new" or an entry's id); see editor(). Anything malformed is ignored.
+const drafts = () => Object.fromEntries(Object.entries(load(DRAFT_KEY)).filter(([, d]) => d && typeof d.title === "string" && typeof d.body === "string"
+  && Array.isArray(d.moods) && d.moods.every((m) => typeof m === "string") && !Number.isNaN(Date.parse(d.saved_at)) && !Number.isNaN(Date.parse(d.logged_at))));
+const setDraft = (id, d) => { const all = drafts(); if (d) all[id] = d; else delete all[id];
+  try { if (Object.keys(all).length) localStorage.setItem(DRAFT_KEY, JSON.stringify(all)); else localStorage.removeItem(DRAFT_KEY); } catch {} };
+
+// On iPhone and iPad the Home Screen app and a Safari tab keep separate journals (elsewhere an installed app shares
+// the browser's), so some words and offers depend on which this is.
+const installed = navigator.standalone === true || matchMedia("(display-mode: standalone)").matches;
+const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1); // iPads can say they're Macs
+const canInstall = ios && !installed && !/FBAN|FBAV|Instagram/.test(navigator.userAgent); // in-app browsers can't add to the Home Screen
+const here = installed ? "this app" : "this browser";
 const live = () => db.entries.filter((e) => !e.deleted_at);
 const dayOf = (e) => toDay(new Date(e.logged_at));
 
 // Photos and voice notes are too big for localStorage, so they go in IndexedDB.
-const idb = new Promise((resolve, reject) => {
+// Safari sometimes drops the connection (an update opening the database elsewhere, or a stuck background
+// transaction), so a closed connection is reopened and the request tried once more instead of failing until a restart.
+let idb = null;
+const openFiles = () => idb = new Promise((resolve, reject) => {
   const req = indexedDB.open("glimmer-files", 1);
   req.onupgradeneeded = () => req.result.createObjectStore("files");
-  req.onsuccess = () => resolve(req.result);
-  req.onerror = () => reject(req.error);
+  req.onsuccess = () => { const d = req.result; d.onversionchange = () => { d.close(); idb = null; }; d.onclose = () => { idb = null; }; resolve(d); };
+  req.onerror = () => { idb = null; reject(req.error); };
 });
-const fileOp = async (mode, fn) => { const d = await idb; return new Promise((res, rej) => {
-  const r = fn(d.transaction("files", mode).objectStore("files")); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); };
+const fileOp = async (mode, fn, retry = true) => {
+  try { const d = await (idb ?? openFiles()); return await new Promise((res, rej) => {
+    const r = fn(d.transaction("files", mode).objectStore("files")); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+  catch (e) { if (retry && e?.name === "InvalidStateError") { idb = null; return fileOp(mode, fn, false); } throw e; }
+};
 const putFile = (id, blob) => fileOp("readwrite", (s) => s.put(blob, id));
 const getFile = (id) => fileOp("readonly", (s) => s.get(id));
 const delFile = (id) => fileOp("readwrite", (s) => s.delete(id));
@@ -219,11 +702,19 @@ const urls = [];
 const objectUrl = (blob) => { const u = URL.createObjectURL(blob); urls.push(u); return u; };
 const fmtDur = (s) => `${Math.floor(Math.round(s) / 60)}:${pad(Math.round(s) % 60)}`;
 const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+// Escapes text and sets its numbers in Literata (see .n), so dates, times and counts have open zeros.
+const nums = (s) => String(s ?? "").split(/(\d+(?:[:.]\d+)*)/).map((t, i) => i % 2 ? `<span class="n">${t}</span>` : esc(t)).join("");
+const and = (list) => new Intl.ListFormat("en", { type: "conjunction" }).format(list); // "Calm, Tired, and Okay"
 const note = (html, ok) => `<p class="notice ${ok ? "ok" : ""}" role="status">${html}</p>`;
 let flash = ""; // a notice to show once on the next page, e.g. "Entry saved."
 const takeFlash = () => { const f = flash; flash = ""; return f; };
+// The bar at the top of pushed pages: the way back, and an optional action at the far end. label is HTML.
+const backBar = (href, label, end = "") => `<header class="backbar"><a class="textbtn back" href="${href}">${ICON.back}<span><span class="sr">Back to </span>${label}</span></a>${end}</header>`;
+// The top bars get a hairline once the page scrolls under them.
+addEventListener("scroll", () => document.documentElement.classList.toggle("scrolled", scrollY > 2), { passive: true });
 
 let leaveGuard = null; // set by the editor while changes are unsaved
+let letGo = null; // set by the editor: what "Leave anyway" does with its draft
 window.addEventListener("beforeunload", (e) => { if (leaveGuard?.()) e.preventDefault(); });
 
 // ---------- trash ----------
@@ -244,47 +735,90 @@ function purgeTrash() {
 
 // ---------- router ----------
 let lastPage = null, purged = 0;
+const leaving = []; // things a page set up that stop when you leave it, like listeners and observers
+// route() moves focus to the day you pick. Only keyboard users should see a ring for that, not a tap.
+let keyboard = false;
+addEventListener("keydown", () => { keyboard = true; document.querySelector(".tapped")?.classList.remove("tapped"); }, true);
+addEventListener("pointerdown", () => { keyboard = false; }, true);
 function route() {
   urls.splice(0).forEach(URL.revokeObjectURL);
   stopRecording?.();
+  leaving.splice(0).forEach((stop) => stop());
   const [page, id, sub] = (location.hash.slice(1) || "home").split("/");
-  leaveGuard = null;
+  leaveGuard = null; letGo = null;
   purged += purgeTrash();
-  const active = page === "entry" || page === "trash" ? "journal" : page;
+  // Entries and the trash live under Journal; Settings opens from Home.
+  const active = page === "entry" || page === "trash" ? "journal" : page === "settings" ? "home" : page;
   $$("[data-nav]", document).forEach((a) => a.dataset.nav === active ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current"));
   ({ home, journal: () => journal(id), entry: () => (id === "new" || sub === "edit" ? editor(id) : view(id)), trash, mood, goals, settings }[page] ?? home)();
+  document.body.classList.toggle("editing", !!$(".editor")); // the editor hides the tab bar and keeps Save in its own dock
   const stay = page === "journal" && lastPage === "journal"; lastPage = page;
-  if (stay) $(".cal a.sel")?.focus(); else window.scrollTo(0, 0); // picking a day keeps your place on the calendar
+  if (!stay) return window.scrollTo(0, 0);
+  // Picking a day keeps your place on the calendar, and brings the day's first entry into view if it's below the fold.
+  const day = $(".cal a.sel");
+  if (day) { day.classList.toggle("tapped", !keyboard); day.focus({ preventScroll: true }); }
+  $(".day :is(.entry-title, .empty)")?.scrollIntoView({ block: "nearest" });
 }
 window.addEventListener("hashchange", route);
 document.addEventListener("click", (e) => {
   const a = e.target.closest("a[href^='#']");
-  if (a && leaveGuard?.() && !confirm("Your latest changes haven't saved yet. Leave anyway?")) e.preventDefault();
+  if (!a || !leaveGuard?.()) return;
+  if (confirm("Your latest changes haven't saved yet. Leave anyway?")) letGo?.(); else e.preventDefault();
 }, true);
 
-const banner = `<p class="banner">Prototype: your writing is saved only in this browser on this device. Nothing is sent to a server.</p>`;
-
 // ---------- home ----------
+// The lamp takes the colors of your latest check-in today. Before one, it's plain lamplight.
+const lastCheckin = () => {
+  const t = db.moods.map((m) => m.checked_in_at).filter((at) => toDay(new Date(at)) === today()).sort().at(-1);
+  return t ? db.moods.filter((m) => m.checked_in_at === t).map((m) => MOODS.find((x) => x.key === m.mood_key)?.label).filter(Boolean) : [];
+};
 function home() {
   const due = db.items.filter((i) => i.status !== "resolved" && i.follow_up_on && i.follow_up_on <= today());
+  const lit = lastCheckin();
+  const unsaved = Object.entries(drafts()).filter(([id]) => id === "new" || live().some((e) => e.id === id)).sort((a, b) => b[1].saved_at.localeCompare(a[1].saved_at));
   main.innerHTML = `
-    ${banner}
-    <section aria-label="Today's quote" class="quote"><div class="glow" aria-hidden="true"></div><p style="position:relative">${esc(quoteFor(today()))}</p></section>
-    <section aria-labelledby="mh"><fieldset><legend><h2 id="mh">How are you feeling right now?</h2><span class="soft" style="font-weight:400">Choose all that apply.</span></legend>
-      <ul class="moods">${MOODS.map((m) => `<li><label class="chip"><input type="checkbox" data-mood="${m.key}"><span aria-hidden="true">${m.emoji}</span> ${m.label}</label></li>`).join("")}</ul></fieldset>
-      <button class="btn primary" id="checkin" disabled style="margin-top:16px">Save check-in</button>
-      <div aria-live="polite" id="moodmsg" style="margin-top:16px"></div>
-      <p style="margin-top:12px"><a href="#mood">See your mood history</a></p></section>
-    ${due.length ? `<section class="stack" aria-label="Check-ins">${due.map(followUpCard).join("")}</section>` : ""}
-    <div class="row"><a class="btn primary" href="#entry/new">Write an entry</a><a href="#journal">Open your journal</a></div>`;
+    <header class="hometop"><h1 class="dateline">${nums(longDay(today()))}</h1><a class="iconbtn" href="#settings" data-nav="settings" aria-label="Settings">${ICON.settings}</a></header>
+    <section class="hearth" aria-label="Today's quote"${lit.length ? ` style="--glow:${css(blend(lit))}"` : ""}>
+      <div class="pool" aria-hidden="true"></div><div class="lamp" aria-hidden="true"><span class="flame"></span></div>
+      <p class="quote">${esc(quoteFor(today()))}</p></section>
+    <section class="checkin" aria-labelledby="mh"><fieldset><legend><h2 id="mh">How are you feeling right now?</h2><span class="hint">Choose all that apply.</span></legend>
+      <ul class="moods">${MOODS.map((m) => `<li><label class="chip" style="${moodVars(m.rgb)}"><input type="checkbox" data-mood="${m.key}"><i class="dot" aria-hidden="true"></i>${m.label}</label></li>`).join("")}</ul></fieldset>
+      <div class="savewrap"><button class="btn primary wide" id="checkin" disabled>Save check-in</button></div>
+      <div aria-live="polite" id="moodmsg"></div>
+      <a class="textbtn u" href="#mood">See your mood history</a></section>
+    ${unsaved.length ? `<aside class="setup" id="draftcard" aria-labelledby="dch"><h2 id="dch">${unsaved.length === 1 ? "You have an unsaved entry" : "You have unsaved entries"}</h2>
+      <ul class="drafts">${unsaved.map(([id, d]) => `<li><a class="textbtn u" href="${id === "new" ? "#entry/new" : `#entry/${id}/edit`}">${esc(d.title.trim() || d.body.trim().slice(0, 60) || "Untitled")}</a><span class="hint">${nums(when(d.saved_at))}</span></li>`).join("")}</ul></aside>` : ""}
+    ${canInstall && !ui.hideInstall ? `<aside class="setup" id="installhint" aria-labelledby="ihh"><h2 id="ihh">Add Glimmer to your Home Screen</h2>
+      ${installSteps(`in <a href="#settings">Settings</a>`)}<button class="btn quiet dismiss" data-dismiss>Got it</button></aside>` : ""}
+    ${installed && ios && journalEmpty() ? `<aside class="setup" id="firstrun" aria-labelledby="frh"><h2 id="frh">Used Glimmer in Safari before?</h2>
+      <p>This app starts with its own, empty journal. If you saved a backup in Safari, restore it here to bring back your entries, photos and voice notes.</p>
+      <p class="hint">No backup yet? Open Glimmer in Safari and save one from Settings first.</p><a class="btn secondary small" href="#settings">Restore a backup</a></aside>` : ""}
+    ${due.length ? `<section class="followups" aria-label="Check-ins">${due.map(followUpCard).join("")}</section>` : ""}
+    <p class="privacy">Glimmer keeps everything in ${here}, on this device. Nothing is sent to a server.</p>`;
+  const hide = $("[data-dismiss]"); // hiding the install hint is remembered on this device; Settings keeps the steps
+  if (hide) hide.onclick = () => { setUi({ hideInstall: true }); $("#installhint").remove(); };
+  const hearth = $(".hearth"), checkin = $(".checkin");
+  const glow = (labels) => labels.length ? hearth.style.setProperty("--glow", css(blend(labels))) : hearth.style.removeProperty("--glow");
+  // While a mood is chosen and Save check-in is scrolled out of view, the button waits above the tab bar (.checkin.picking.away).
+  if (window.IntersectionObserver) {
+    const io = new IntersectionObserver(([e]) => checkin.classList.toggle("away", !e.isIntersecting), { rootMargin: `0px 0px -${$(".tabbar", document).offsetHeight}px 0px` });
+    io.observe($(".savewrap")); leaving.push(() => io.disconnect());
+  }
   // Each chosen mood is its own record; moods saved together share one time, so history can group them.
   const picked = () => $$("[data-mood]").filter((c) => c.checked).map((c) => MOODS.find((x) => x.key === c.dataset.mood));
-  $$("[data-mood]").forEach((c) => c.onchange = () => { $("#checkin").disabled = !picked().length; $("#moodmsg").innerHTML = ""; });
+  $$("[data-mood]").forEach((c) => c.onchange = () => {
+    const ms = picked(); $("#checkin").disabled = !ms.length; $("#moodmsg").innerHTML = ""; checkin.classList.toggle("picking", ms.length > 0);
+    glow(ms.length ? ms.map((m) => m.label) : lastCheckin()); // the lamp shows what you're choosing
+  });
   $("#checkin").onclick = () => {
-    const ms = picked(), at = new Date().toISOString();
+    const ms = picked(), at = new Date().toISOString(), away = checkin.classList.contains("away");
     ms.forEach((m) => db.moods.push({ id: uid(), mood_key: m.key, checked_in_at: at })); persist();
-    $$("[data-mood]").forEach((c) => c.checked = false); $("#checkin").disabled = true;
-    $("#moodmsg").innerHTML = `<p class="notice ok">Saved: ${ms.map((m) => `${m.emoji} ${m.label}`).join(", ")} at ${time(at)}.</p>`;
+    $("#firstrun")?.remove(); // the journal isn't empty any more
+    $$("[data-mood]").forEach((c) => c.checked = false); $("#checkin").disabled = true; checkin.classList.remove("picking");
+    // Check-ins live in mood history. The calendar only lights up for entries, so say where this one went.
+    $("#moodmsg").innerHTML = `<p class="notice ok">Saved: ${esc(and(ms.map((m) => m.label)))} at ${nums(time(at))}. <a href="#mood">See it in your mood history</a>.</p>`;
+    if (away) $("#moodmsg").scrollIntoView({ block: "nearest" }); // saved from the waiting button, so show the confirmation
+    glow(ms.map((m) => m.label)); hearth.classList.remove("kindle"); void hearth.offsetWidth; hearth.classList.add("kindle"); // and kindles when it's saved
   };
   $$("[data-answer]").forEach((b) => b.onclick = () => {
     const card = b.closest(".card"); const item = db.items.find((i) => i.id === card.dataset.item);
@@ -295,14 +829,18 @@ function home() {
     card.outerHTML = `<p class="notice ok">${answer === "done" ? "Marked as done. Nice work seeing it through." : "Thanks for checking in. We'll ask again in a week."}</p>`;
   });
 }
+// How to add Glimmer to the Home Screen: on Home until you hide it, and in Settings for as long as it isn't installed.
+const installSteps = (backupAt) => `<p>From your Home Screen, Glimmer opens full screen, works offline and keeps your journal safe. Safari can clear a site's data after <span class="n">7</span> days without a visit.</p>
+  <ol class="steps"><li>Tap <b>Share</b> ${ICON.share}, or ${ICON.more}<span class="sr">More</span> and then <b>Share</b>.</li><li>Choose <b>Add to Home Screen</b>, and keep <b>Open as Web App</b> on.</li></ol>
+  <p class="hint">The app keeps its own journal. If you've already written here, save a backup ${backupAt} first, then restore it in the app.</p>`;
 function followUpCard(i) {
   return `<article class="card" data-item="${i.id}">
-    <h3 style="color:var(--sage-ink)">${i.kind === "goal" ? "Checking in on a goal" : "Checking in on something that was on your mind"}</h3>
-    <p style="font:20px var(--serif)">&ldquo;${esc(i.text)}&rdquo;</p>
+    <h3>${i.kind === "goal" ? "Checking in on a goal" : "Checking in on something that was on your mind"}</h3>
+    <p class="fu-text">&ldquo;${esc(i.text)}&rdquo;</p>
     <p>${i.kind === "goal" ? "How is it going?" : "How are you feeling about it now?"}</p>
-    <label class="f small">Add a note (optional)<textarea class="in" rows="2" maxlength="1000"></textarea></label>
-    <div class="row"><button class="btn secondary" data-answer="still_on_my_mind">Still on my mind</button>
-    <button class="btn secondary" data-answer="better">Better</button><button class="btn secondary" data-answer="done">Done</button></div></article>`;
+    <label class="f">Add a note (optional)<textarea class="in" rows="2" maxlength="1000"></textarea></label>
+    <div class="actions"><button class="btn secondary small" data-answer="still_on_my_mind">Still on my mind</button>
+    <button class="btn secondary small" data-answer="better">Better</button><button class="btn secondary small" data-answer="done">Done</button></div></article>`;
 }
 
 // ---------- journal: calendar and one day ----------
@@ -319,34 +857,36 @@ function journal(arg) {
   const cell = (d) => {
     if (!d) return "<td></td>";
     const list = byDay[d] ?? [], moods = list.flatMap((e) => e.moods), bg = moods.length ? blend(moods) : null;
-    const style = bg ? `background:${css(bg)};color:${inkOn(bg)}` : list.length ? "background:var(--hairline)" : ""; // no entries: plain
+    const cls = [list.length && "lit", d === sel && "sel"].filter(Boolean).join(" "); // a day with entries is lit; without moods it's a plain light
+    const style = bg ? ` style="--day:${css(bg)};--on:${inkOn(bg)}"` : "";
     const label = `${longDay(d)}, ${list.length ? `${list.length} ${list.length === 1 ? "entry" : "entries"}${moods.length ? ": " + [...new Set(moods)].join(", ") : ""}` : "no entries"}`;
-    return `<td><a href="#journal/${d}"${d === sel ? ' class="sel"' : ""}${d === today() ? ' aria-current="date"' : ""} style="${style}" aria-label="${esc(label)}">${Number(d.slice(8))}</a></td>`;
+    return `<td><a href="#journal/${d}"${cls ? ` class="${cls}"` : ""}${d === today() ? ' aria-current="date"' : ""}${style} aria-label="${esc(label)}">${Number(d.slice(8))}</a></td>`;
   };
   const rows = Array.from({ length: cells.length / 7 }, (_, r) => `<tr>${cells.slice(r * 7, r * 7 + 7).map(cell).join("")}</tr>`).join("");
   const used = [...new Set(Object.keys(byDay).filter((d) => d.startsWith(month)).flatMap((d) => byDay[d].flatMap((e) => e.moods)))];
   const inTrash = db.entries.filter((e) => e.deleted_at).length;
-  main.innerHTML = `<div class="row" style="justify-content:space-between"><h1>Journal</h1><a href="#trash">Trash${inTrash ? ` (${inTrash})` : ""}</a></div>
+  main.innerHTML = `<header class="pagehead"><h1>Journal</h1><a class="textbtn" href="#trash">${ICON.trash}Trash${inTrash ? `<span class="count"><span class="sr">, </span>${inTrash}</span>` : ""}</a></header>
     ${takeFlash()}
-    <section class="stack" aria-labelledby="calh">
-      <div class="row"><a href="#journal/${shift(-1)}">&larr; Previous month</a>
-        <h2 id="calh">${parseDay(month + "-01").toLocaleDateString(undefined, { month: "long", year: "numeric" })}</h2>
-        <a href="#journal/${shift(1)}">Next month &rarr;</a>${month !== today().slice(0, 7) ? `<a href="#journal">Back to today</a>` : ""}</div>
+    <section class="month" aria-labelledby="calh">
+      <div class="monthnav"><h2 id="calh">${parseDay(month + "-01").toLocaleDateString(undefined, { month: "long", year: "numeric" })}</h2>
+        ${month !== today().slice(0, 7) ? `<a class="btn secondary small" href="#journal">Today</a>` : ""}
+        <a class="iconbtn" href="#journal/${shift(-1)}" aria-label="Previous month">${ICON.back}</a>
+        <a class="iconbtn" href="#journal/${shift(1)}" aria-label="Next month">${ICON.next}</a></div>
       <table class="cal"><thead><tr>${WEEK.map((w) => `<th scope="col">${w}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>
-      ${used.length ? `<div class="stack" style="gap:6px">${moodRow(used)}<p class="small soft">Days with more than one mood show a mix of their colors.</p></div>` : ""}
     </section>
-    ${sel ? daySection(sel, byDay[sel] ?? []) : `<p class="soft">Choose a day to see its entries.</p>`}`;
+    ${sel ? daySection(sel, byDay[sel] ?? []) : `<p class="hint">Choose a day to see its entries.</p>`}
+    ${used.length ? `<section class="legend" aria-label="Mood colors this month">${moodRow(used)}<p class="hint">Days with more than one mood show a mix of their colors.</p></section>` : ""}`;
 }
+// The day's entries come straight after its heading, so a tap on a small phone shows them; adding one comes after.
 function daySection(d, list) {
-  const future = d > today();
-  return `<section class="stack" aria-labelledby="dayh">
-    <div class="row" style="justify-content:space-between"><h2 id="dayh">${longDay(d)}</h2>
-      ${future ? "" : `<a class="btn primary" href="#entry/new"><span aria-hidden="true">+</span>&nbsp;Add entry</a>`}</div>
-    ${!future && d !== today() ? `<p class="small soft">New entries are saved with today's date and the current time.</p>` : ""}
-    ${list.length ? `<ul class="list">${list.sort((a, b) => a.logged_at.localeCompare(b.logged_at)).map((e) => `<li><a class="entry-link" href="#entry/${e.id}">
-      <span class="small soft">${time(e.logged_at)}</span>${e.history.length ? ` <span class="tag">Edited</span>` : ""}
+  const future = d > today(), quietToday = d === today() && !list.length; // an empty today offers Write in place of Add entry
+  return `<section class="day" aria-labelledby="dayh"><h2 id="dayh">${longDay(d)}</h2>
+    ${list.length ? `<ul class="entries">${list.sort((a, b) => a.logged_at.localeCompare(b.logged_at)).map((e) => `<li><a class="entry-link" href="#entry/${e.id}">${light(e.moods)}
+      <span class="entry-meta"><span>${nums(time(e.logged_at))}</span>${e.history.length ? `<span class="tag">Edited</span>` : ""}</span>
       <p class="entry-title">${esc(e.title || "Untitled")}</p>${moodRow(e.moods)}${e.body ? `<p class="excerpt">${esc(e.body.slice(0, 160))}</p>` : ""}</a></li>`).join("")}</ul>`
-    : `<p class="soft">No entries on this day.</p>`}
+    : quietToday ? `<div class="empty row"><p>No entries today.</p><a class="btn secondary small" href="#entry/new">${ICON.pen}Write</a></div>`
+    : `<p class="empty">No entries on this day.</p>`}
+    ${future || quietToday ? "" : `<div class="dayadd"><a class="btn secondary small" href="#entry/new">${ICON.plus}Add entry</a>${d !== today() ? `<p class="hint">New entries get today's date and time.</p>` : ""}</div>`}
   </section>`;
 }
 
@@ -357,13 +897,42 @@ async function showMedia(items, onRemove) {
   const seq = ++mediaSeq;
   const html = await Promise.all(items.map(async ({ m, blob }) => {
     blob ??= await getFile(m.id).catch(() => null); if (!blob) return ["", ""];
-    const u = objectUrl(blob), del = onRemove ? `<button class="btn quiet small" data-del="${m.id}" style="align-self:flex-start">Remove ${m.kind === "photo" ? "photo" : "voice note"}</button>` : "";
-    return m.kind === "photo" ? [`<li class="stack" style="gap:8px"><a href="${u}" target="_blank"><img src="${u}" alt="Photo added ${new Date(m.created_at).toLocaleDateString()}"></a>${del}</li>`, ""]
-      : ["", `<li class="stack" style="gap:8px;padding:12px 0"><p class="small soft">Voice note${m.duration_seconds != null ? ", " + fmtDur(m.duration_seconds) : ""}</p><audio controls src="${u}"></audio>${del}</li>`];
+    const u = objectUrl(blob), del = onRemove ? `<button class="btn quiet media-del" data-del="${m.id}">Remove ${m.kind === "photo" ? "photo" : "voice note"}</button>` : "";
+    return m.kind === "photo" ? [`<li><button class="open" type="button"><img src="${u}" alt="Photo added ${new Date(m.created_at).toLocaleDateString()}"></button>${del}</li>`, ""]
+      : ["", `<li><p class="hint">Voice note${m.duration_seconds != null ? ", " + nums(fmtDur(m.duration_seconds)) : ""}</p><audio controls src="${u}"></audio>${del}</li>`];
   }));
   if (seq !== mediaSeq || !$("#photolist")) return; // a newer render or another page took over while files loaded
   $("#photolist").innerHTML = html.map((h) => h[0]).join(""); $("#voicelist").innerHTML = html.map((h) => h[1]).join("");
+  $$("#photolist .open").forEach((b) => b.onclick = () => viewPhoto(b.querySelector("img")));
   if (onRemove) $$("[data-del]").forEach((b) => b.onclick = () => onRemove(b.dataset.del));
+}
+
+// Photos open full screen inside Glimmer. (A link to the photo in a new window breaks in the Home Screen app.)
+function viewPhoto(img) {
+  let v = document.getElementById("viewer");
+  if (!v) {
+    document.body.insertAdjacentHTML("beforeend", `<dialog id="viewer" aria-label="Photo"><img alt=""><button class="btn secondary" type="button" data-close>Close</button></dialog>`);
+    v = document.getElementById("viewer");
+    v.onclick = (e) => { if (e.target === v || e.target.closest("[data-close]")) v.close(); }; // a tap around the photo closes it too
+  }
+  const from = img.closest("button");
+  Object.assign(v.querySelector("img"), { src: img.src, alt: img.alt });
+  v.onclose = () => { if (from.isConnected) from.focus({ preventScroll: true }); };
+  v.showModal();
+  leaving.push(() => v.open && v.close());
+}
+// Phone photos are often 4000px across and several MB. At 2048px on the long side they still look sharp on any
+// screen, take a fraction of the space on the phone, and keep backups small. Smaller photos are kept as they are.
+async function shrink(file) {
+  const img = new Image(), u = URL.createObjectURL(file);
+  try { img.src = u; await img.decode(); } catch { return file; } finally { URL.revokeObjectURL(u); }
+  const k = 2048 / Math.max(img.naturalWidth, img.naturalHeight); // natural size already follows the photo's rotation
+  if (k >= 1) return file;
+  const c = Object.assign(document.createElement("canvas"), { width: Math.round(img.naturalWidth * k), height: Math.round(img.naturalHeight * k) });
+  const g = c.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); // JPEG has no transparency, so see-through parts become white, not black
+  g.drawImage(img, 0, 0, c.width, c.height);
+  return (await new Promise((r) => c.toBlob(r, "image/jpeg", 0.85))) ?? file;
 }
 
 // ---------- one entry ----------
@@ -374,33 +943,32 @@ function snapHtml(s, other) {
   return `<dl class="snap"><dt>Title${changed("title")}</dt><dd>${esc(s.title || "Untitled")}</dd>
     <dt>Moods${changed("moods")}</dt><dd>${s.moods.length ? esc(s.moods.join(", ")) : "None"}</dd>
     <dt>Description${changed("body")}</dt><dd style="white-space:pre-wrap">${s.body ? esc(s.body) : "(empty)"}</dd>
-    <dt>Photos and voice notes${changed("media")}</dt><dd>${plural(count("photo"), "photo")}, ${plural(count("voice"), "voice note")}</dd></dl>`;
+    <dt>Photos and voice notes${changed("media")}</dt><dd>${nums(`${plural(count("photo"), "photo")}, ${plural(count("voice"), "voice note")}`)}</dd></dl>`;
 }
 function view(id) {
   const e = db.entries.find((x) => x.id === id);
-  if (!e) { main.innerHTML = `<h1>This entry isn't here</h1><p class="soft">It may have been permanently deleted.</p><a href="#journal">Back to journal</a>`; return; }
+  if (!e) { main.innerHTML = `<h1>This entry isn't here</h1><p class="soft">It may have been permanently deleted.</p><a class="btn secondary" href="#journal" style="align-self:flex-start">Back to journal</a>`; return; }
   const d = dayOf(e), mine = db.media.filter((m) => m.entry_id === e.id);
-  main.innerHTML = `<a href="${e.deleted_at ? "#trash" : `#journal/${d}`}" style="align-self:flex-start">${e.deleted_at ? "Back to trash" : `Back to ${longDay(d)}`}</a>
+  // Edit lives in the top bar, where it stays in reach as you scroll a long entry.
+  main.innerHTML = `${e.deleted_at ? backBar("#trash", "Trash") : backBar(`#journal/${d}`, nums(longDay(d)), `<a class="textbtn" href="#entry/${e.id}/edit">Edit</a>`)}
     ${takeFlash()}
-    ${e.deleted_at ? note(`This entry is in the trash. It will be permanently deleted ${daysLeft(e) <= 1 ? "within a day" : `in ${daysLeft(e)} days`} unless you restore it.`) : ""}
-    <article class="sheet"><div class="glow" aria-hidden="true"></div>
-      <div class="sheet-meta"><p>${when(e.logged_at)}</p>${e.history.length ? `<span class="tag">Edited</span>` : ""}</div>
-      <div style="position:relative;margin-top:24px" class="stack">
-        <h1>${esc(e.title || "Untitled")}</h1>${moodRow(e.moods)}
-        ${e.body ? `<p class="body-text">${esc(e.body)}</p>` : ""}
-        ${mine.length ? `<ul class="photos" id="photolist"></ul><ul class="list" id="voicelist" style="border-top:0"></ul>` : ""}
-      </div>
+    ${e.deleted_at ? note(nums(`This entry is in the trash. It will be permanently deleted ${daysLeft(e) <= 1 ? "within a day" : `in ${daysLeft(e)} days`} unless you restore it.`)) : ""}
+    <article class="entry">
+      <p class="meta"><span>${nums(when(e.logged_at))}</span>${e.history.length ? `<span class="tag">Edited</span>` : ""}</p>
+      <h1>${esc(e.title || "Untitled")}</h1>${moodRow(e.moods)}
+      ${e.body ? `<p class="body-text">${esc(e.body)}</p>` : ""}
+      ${mine.length ? `<ul class="photos" id="photolist"></ul><ul class="voices" id="voicelist"></ul>` : ""}
     </article>
-    <div class="row">${e.deleted_at ? `<button class="btn primary" id="restore">Restore entry</button>`
-      : `<a class="btn primary" href="#entry/${e.id}/edit">Edit entry</a><button class="btn secondary" id="totrash">Move to trash</button>`}</div>
-    ${e.history.length ? `<section class="stack" aria-labelledby="histh"><h2 id="histh">Edit history</h2>
-      <ul class="list">${[...e.history].reverse().map((h) => `<li class="stack" style="gap:12px;padding:18px 0"><h3>Edited ${short(h.edited_at)}</h3>
-        <div class="diff"><div><p class="small soft">Before</p>${snapHtml(h.before, h.after)}</div><div><p class="small soft">After</p>${snapHtml(h.after, h.before)}</div></div></li>`).join("")}</ul></section>` : ""}`;
+    ${e.deleted_at ? `<div class="actions"><button class="btn primary" id="restore">Restore entry</button></div>`
+      : `<div class="actions entry-end"><button class="btn quiet" id="totrash">${ICON.trash}Move to trash</button></div>`}
+    ${e.history.length ? `<section class="history" aria-labelledby="histh"><h2 id="histh">Edit history</h2>
+      <ul class="hist">${[...e.history].reverse().map((h) => `<li><h3>Edited ${nums(short(h.edited_at))}</h3>
+        <div class="diff"><div><p class="hint">Before</p>${snapHtml(h.before, h.after)}</div><div><p class="hint">After</p>${snapHtml(h.after, h.before)}</div></div></li>`).join("")}</ul></section>` : ""}`;
   if (mine.length) showMedia(mine.map((m) => ({ m })));
   if (e.deleted_at) $("#restore").onclick = () => { e.deleted_at = null; persist(); flash = note("Restored. It's back in your journal.", true); view(id); };
   else $("#totrash").onclick = () => {
     e.deleted_at = new Date().toISOString(); persist();
-    flash = note(`Moved to the trash. You can restore it from the <a href="#trash">trash</a> for ${TRASH_DAYS} days.`, true);
+    flash = note(`Moved to the trash. You can restore it from the <a href="#trash">trash</a> for <span class="n">${TRASH_DAYS}</span> days.`, true);
     location.hash = `#journal/${d}`;
   };
 }
@@ -409,15 +977,29 @@ function view(id) {
 let stopRecording = null, finishRecording = null;
 function editor(id) {
   const current = id === "new" ? null : db.entries.find((e) => e.id === id);
-  if (current === undefined) { main.innerHTML = `<h1>This entry isn't here</h1><a href="#journal">Back to journal</a>`; return; }
+  if (current === undefined) { main.innerHTML = `<h1>This entry isn't here</h1><a class="btn secondary" href="#journal" style="align-self:flex-start">Back to journal</a>`; return; }
   if (current?.deleted_at) return view(id); // restore it before editing
-  const loggedAt = current?.logged_at ?? new Date().toISOString(); // set by the device, never editable
+  // iOS can close a Home Screen app while it's in the background, so what you write is also kept on this device as you
+  // type and the moment the app is hidden. It comes back here until you save it or discard it.
+  const kept = drafts()[id];
+  const loggedAt = current?.logged_at ?? kept?.logged_at ?? new Date().toISOString(); // set by the device, never editable
   const saved = current ? db.media.filter((m) => m.entry_id === current.id) : [];
-  const draft = { title: current?.title ?? "", body: current?.body ?? "", moods: [...(current?.moods ?? [])] };
+  const draft = kept ? { title: kept.title, body: kept.body, moods: [...kept.moods] }
+    : { title: current?.title ?? "", body: current?.body ?? "", moods: [...(current?.moods ?? [])] };
   const pending = [], removed = new Set(); // photo and voice note changes wait here until you save
-  let dirty = false, saving = false;
+  let dirty = !!kept, saving = false, keepDraft = true, draftTimer = 0;
   leaveGuard = () => dirty;
-  const touch = () => { dirty = true; };
+  const unchanged = () => current ? draft.title === (current.title ?? "") && draft.body === current.body && JSON.stringify(draft.moods) === JSON.stringify(current.moods)
+    : !draft.title && !draft.body && !draft.moods.length;
+  const writeDraft = () => { clearTimeout(draftTimer); if (!keepDraft || !dirty) return;
+    setDraft(id, unchanged() && !pending.length ? null : { title: draft.title, body: draft.body, moods: draft.moods, logged_at: loggedAt, pending: pending.length, saved_at: new Date().toISOString() }); };
+  const dropDraft = () => { keepDraft = false; clearTimeout(draftTimer); setDraft(id, null); };
+  letGo = dropDraft;
+  const touch = () => { dirty = true; clearTimeout(draftTimer); draftTimer = setTimeout(writeDraft, 500); };
+  // Going to the background also stops a recording and keeps it, instead of losing it.
+  const hidden = () => { if (document.visibilityState === "hidden") { writeDraft(); finishRecording?.().then(writeDraft); } };
+  addEventListener("pagehide", writeDraft); document.addEventListener("visibilitychange", hidden);
+  leaving.push(() => { writeDraft(); removeEventListener("pagehide", writeDraft); document.removeEventListener("visibilitychange", hidden); });
   // Mood choices: the built-in list, then custom moods (yours from other entries and any added here), A to Z.
   const customs = [];
   const addOption = (l) => { if (!findMood(l) && !customs.some((c) => c.toLowerCase() === l.toLowerCase())) { customs.push(l); customs.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })); } };
@@ -426,72 +1008,99 @@ function editor(id) {
   const has = (l) => draft.moods.some((x) => x.toLowerCase() === l.toLowerCase());
   const back = current ? `#entry/${current.id}` : "#journal";
 
-  main.innerHTML = `<a href="${back}" style="align-self:flex-start">${current ? "Back to entry" : "Back to journal"}</a>
-    <article class="sheet"><div class="glow" aria-hidden="true"></div>
-      <div class="sheet-meta"><p><b>${when(loggedAt)}</b><br>Date and time are set automatically and can't be changed.</p>${current?.history.length ? `<span class="tag">Edited</span>` : ""}</div>
-      <div style="position:relative;margin-top:32px" class="stack">
-        <label class="small soft" for="title">Title (optional)</label><input id="title" class="title-in" maxlength="200" placeholder="Untitled" value="${esc(draft.title)}">
-        <label class="small soft" for="body" style="margin-top:12px">Description (required)</label><textarea id="body" class="body-in" placeholder="What's on your mind today?">${esc(draft.body)}</textarea>
-        <fieldset style="margin-top:24px"><legend>How are you feeling? (required) <span class="soft" style="font-weight:400">Choose all that apply.</span></legend>
-          <ul class="moods" id="moodlist"></ul>
-          <div class="row" style="margin-top:12px;align-items:flex-end"><label class="f" style="flex:1 1 14rem">Or type your own mood<input type="text" id="custom" maxlength="40" autocomplete="off"></label>
-            <button class="btn secondary" id="addcustom">Add mood</button></div>
-        </fieldset>
-      </div>
-      <section style="position:relative;margin-top:40px;padding-top:32px;border-top:1px solid var(--hairline)" class="stack" aria-labelledby="medh">
-        <h2 id="medh">Photos and voice notes</h2>
-        <p class="small soft">Optional. Changes here are kept when you save the entry.</p>
-        <div id="medmsg" aria-live="polite"></div>
-        <label class="f">Add photos<span class="small soft" style="font-weight:400">JPG, PNG, or WebP, up to 10 MB each.</span>
+  main.innerHTML = `<div class="editor">
+    <header class="edit-top"><div class="edit-bar"><a class="textbtn" href="${back}">Cancel</a><h1>${current ? "Edit entry" : "New entry"}</h1>
+      <button class="btn" id="savetop" type="button">Save</button></div><div id="err" aria-live="polite"></div></header>
+    ${kept ? `<div id="draftnote">${note(`Your unsaved changes from ${nums(when(kept.saved_at))} are back.${kept.pending ? " Photos and voice notes you'd added weren't kept, so add them again." : ""}
+      <br><button class="btn secondary small" type="button" data-discard-draft>Discard them</button>`, true)}</div>` : ""}
+    <div class="edit-when"><span class="daylight" id="daylight" aria-hidden="true">${Number(toDay(new Date(loggedAt)).slice(8))}</span>
+      <div><p class="when">${nums(when(loggedAt))}${current?.history.length ? `<span class="tag">Edited</span>` : ""}</p><p class="hint">Date and time are set automatically and can't be changed.</p></div></div>
+    <div class="field"><label for="title">Title (optional)</label><input id="title" class="title-in" maxlength="200" placeholder="Untitled" autocomplete="off" value="${esc(draft.title)}"></div>
+    <div class="field"><label for="body">Description (required)</label><textarea id="body" class="body-in" placeholder="What's on your mind today?">${esc(draft.body)}</textarea></div>
+    <fieldset class="moodfield"><legend>How are you feeling? (required) <span class="hint">Choose all that apply.</span></legend>
+      <ul class="moods" id="moodlist"></ul>
+      <div class="addmood"><label for="custom">Or type your own mood</label>
+        <div class="inline"><input type="text" id="custom" maxlength="40" autocomplete="off"><button class="btn secondary" id="addcustom">Add mood</button></div></div>
+    </fieldset>
+    <section class="media" aria-labelledby="medh">
+      <h2 id="medh">Photos and voice notes</h2>
+      <p class="hint">Optional. Changes here are kept when you save the entry.</p>
+      <div id="medmsg" aria-live="polite"></div>
+      <div class="addrows">
+        <label class="actionrow">${ICON.photo}<span>Add photos<span class="hint">JPG, PNG, or WebP, up to <span class="n">25</span> MB each.</span></span>
           <input type="file" id="photos" accept="image/jpeg,image/png,image/webp" multiple></label>
-        <ul class="photos" id="photolist"></ul>
         <div id="recorder"></div>
-        <label class="f">Or upload an audio file<span class="small soft" style="font-weight:400">Up to 5 minutes and 20 MB.</span>
+        <label class="actionrow">${ICON.audio}<span>Upload an audio file<span class="hint">Up to <span class="n">5</span> minutes and <span class="n">20</span> MB.</span></span>
           <input type="file" id="audiofile" accept=".m4a,.mp3,.wav,.ogg,.webm,.aac,audio/mp4,audio/x-m4a,audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/aac"></label>
-        <ul class="list" id="voicelist" style="border-top:0"></ul>
-      </section>
-    </article>
-    <div id="err" aria-live="polite"></div>
-    <div class="row"><button class="btn primary" id="save">${current ? "Save changes" : "Save entry"}</button><a href="${back}">Cancel</a></div>`;
+      </div>
+      <ul class="photos" id="photolist"></ul>
+      <ul class="voices" id="voicelist"></ul>
+    </section>
+    <div class="dock"><button class="btn primary wide" id="save">${current ? "Save changes" : "Save entry"}</button></div>
+  </div>`;
+
+  // iOS keeps the page still when the keyboard opens and pans a smaller visible area over it. Following that area keeps
+  // the top bar, with Cancel, Save and any error, in view while you type (see .edit-top).
+  const vv = window.visualViewport;
+  if (vv) {
+    const pin = () => main.style.setProperty("--vv-top", `${Math.max(0, Math.round(vv.offsetTop))}px`);
+    vv.addEventListener("resize", pin); vv.addEventListener("scroll", pin); pin();
+    leaving.push(() => { vv.removeEventListener("resize", pin); vv.removeEventListener("scroll", pin); main.style.removeProperty("--vv-top"); });
+  }
+
+  // What still stops a save. After a failed save the message under the top bar updates as you fix things, then goes away.
+  const problems = () => [!draft.body.trim() && "Write a description.", !options().some(has) && "Choose at least one mood, or type your own."].filter(Boolean).join(" ");
+  let shown = "";
+  const showProblems = () => {
+    const p = problems();
+    if (p !== shown) $("#err").innerHTML = p ? note(`${current ? "Your changes can't be saved yet." : "This entry can't be saved yet."} ${p}`) : "";
+    shown = p;
+  };
+  // This entry's light kindles in the blend of the moods you choose, the way its day will in the calendar.
+  const kindle = () => { const ms = options().filter(has), c = ms.length ? blend(ms) : null, el = $("#daylight");
+    el.classList.toggle("lit", !!c); el.style.cssText = c ? `--day:${css(c)};--on:${inkOn(c)}` : ""; };
 
   const body = $("#body");
   const grow = () => { body.style.height = "auto"; body.style.height = body.scrollHeight + "px"; };
   grow();
   $("#title").oninput = (e) => { draft.title = e.target.value; touch(); };
-  body.oninput = (e) => { draft.body = e.target.value; touch(); grow(); };
+  body.oninput = (e) => { draft.body = e.target.value; touch(); grow(); if (shown) showProblems(); };
 
   function renderMoods() {
     $("#moodlist").innerHTML = options().map((l) => { const m = moodInfo(l);
-      return `<li><label class="chip"><input type="checkbox" value="${esc(m.label)}"${has(l) ? " checked" : ""}><span class="swatch" style="background:${css(m.rgb)}" aria-hidden="true"></span>${m.emoji ? `<span aria-hidden="true">${m.emoji}</span>` : ""}${esc(m.label)}</label></li>`; }).join("");
+      return `<li><label class="chip" style="${moodVars(m.rgb)}"><input type="checkbox" value="${esc(m.label)}"${has(l) ? " checked" : ""}><i class="dot" aria-hidden="true"></i>${esc(m.label)}</label></li>`; }).join("");
     $$("#moodlist input").forEach((c) => c.onchange = () => {
       draft.moods = c.checked ? [...draft.moods, c.value] : draft.moods.filter((x) => x.toLowerCase() !== c.value.toLowerCase()); touch();
+      kindle(); if (shown) showProblems();
     });
+    kindle();
   }
   const addCustom = () => {
     const l = cleanMood($("#custom").value); $("#custom").value = ""; if (!l) return;
-    addOption(l); if (!has(l)) draft.moods.push(l); touch(); renderMoods();
+    addOption(l); if (!has(l)) draft.moods.push(l); touch(); renderMoods(); if (shown) showProblems();
   };
   renderMoods();
   $("#addcustom").onclick = addCustom;
   $("#custom").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } };
 
+  $("#savetop").onclick = () => $("#save").click(); // the same save, in reach while the keyboard is up
+  $("[data-discard-draft]")?.addEventListener("click", () => { dropDraft(); dirty = false; route(); });
   $("#save").onclick = async () => {
     if (saving) return;
     saving = true; await finishRecording?.(); saving = false; // a recording still going is stopped and added first
     if ($("#custom").value.trim()) addCustom(); // a typed mood counts even if you didn't press Add
-    const text = draft.body.trim(), moods = options().filter(has), problems = [];
-    if (!text) problems.push("Write a description.");
-    if (!moods.length) problems.push("Choose at least one mood, or type your own.");
-    if (problems.length) {
-      $("#err").innerHTML = note(`${current ? "Your changes can't be saved yet." : "This entry can't be saved yet."} ${problems.join(" ")}`);
-      (text ? $("#moodlist input") : body).focus(); return;
+    const text = draft.body.trim(), moods = options().filter(has);
+    shown = ""; showProblems();
+    if (shown) { // the message sits under the top bar; then focus goes to the first thing that's missing
+      $("#err").scrollIntoView({ block: "nearest" });
+      const fix = text ? $("#moodlist input") : body; fix.focus({ preventScroll: true }); fix.scrollIntoView({ block: "center" }); return;
     }
     const keep = [...saved.filter((m) => !removed.has(m.id)), ...pending.map((p) => p.m)];
     const before = current && snap(current.title ?? null, current.body, current.moods, saved), after = snap(draft.title.trim() || null, text, moods, keep);
-    if (current && JSON.stringify(before) === JSON.stringify(after)) { dirty = false; flash = note("Nothing changed, so there was nothing new to save.", true); location.hash = back; return; }
+    if (current && JSON.stringify(before) === JSON.stringify(after)) { dirty = false; dropDraft(); flash = note("Nothing changed, so there was nothing new to save.", true); location.hash = back; return; }
     saving = true; $("#save").disabled = true;
     try { for (const p of pending) await putFile(p.m.id, p.blob); }
-    catch { saving = false; $("#save").disabled = false; $("#err").innerHTML = note("Your photos or voice notes couldn't be saved. Your browser may be out of space. Try removing one and saving again."); return; }
+    catch { saving = false; $("#save").disabled = false; $("#err").innerHTML = note("Your photos or voice notes couldn't be saved. Your browser may be out of space. Try removing one and saving again."); $("#err").scrollIntoView({ block: "nearest" }); return; }
     removed.forEach((mid) => delFile(mid).catch(() => {}));
     const now = new Date().toISOString();
     let entry = current;
@@ -500,12 +1109,12 @@ function editor(id) {
     Object.assign(entry, { title: after.title, body: text, moods, updated_at: now });
     pending.forEach((p) => p.m.entry_id = entry.id);
     db.media = [...db.media.filter((m) => !removed.has(m.id)), ...pending.map((p) => p.m)];
-    persist(); dirty = false;
+    persist(); dirty = false; dropDraft();
     flash = note(current ? "Changes saved." : "Entry saved.", true);
     location.hash = current ? `#entry/${entry.id}` : `#journal/${dayOf(entry)}`;
   };
 
-  const msg = (text, ok) => { $("#medmsg").innerHTML = text ? `<p class="notice ${ok ? "ok" : ""}">${esc(text)}</p>` : ""; };
+  const msg = (text, ok) => { $("#medmsg").innerHTML = text ? `<p class="notice ${ok ? "ok" : ""}">${nums(text)}</p>` : ""; };
   const renderMedia = () => showMedia([...saved.filter((m) => !removed.has(m.id)).map((m) => ({ m })), ...pending], (mid) => {
     const i = pending.findIndex((p) => p.m.id === mid); if (i >= 0) pending.splice(i, 1); else removed.add(mid); touch(); renderMedia();
   });
@@ -516,14 +1125,13 @@ function editor(id) {
   };
   renderMedia();
 
-  $("#photos").onchange = (e) => {
-    msg("");
-    for (const f of e.target.files) {
+  $("#photos").onchange = async (e) => {
+    const files = [...e.target.files]; e.target.value = ""; msg("");
+    for (const f of files) {
       if (!["image/jpeg", "image/png", "image/webp"].includes(f.type)) { msg(`${f.name} isn't a JPG, PNG, or WebP photo.`); continue; }
-      if (f.size > 10 * 1024 * 1024) { msg(`That photo is ${(f.size / 1048576).toFixed(1)} MB. Photos can be up to 10 MB.`); continue; }
-      stage("photo", f, null);
+      if (f.size > 25 * 1024 * 1024) { msg(`That photo is ${(f.size / 1048576).toFixed(1)} MB. Photos can be up to 25 MB.`); continue; }
+      stage("photo", await shrink(f), null);
     }
-    e.target.value = "";
   };
   $("#audiofile").onchange = async (e) => {
     const f = e.target.files[0]; if (!f) return; msg("");
@@ -540,23 +1148,25 @@ function editor(id) {
 function trash() {
   const gone = purged; purged = 0;
   const list = db.entries.filter((e) => e.deleted_at).sort((a, b) => b.deleted_at.localeCompare(a.deleted_at));
-  main.innerHTML = `<a href="#journal" style="align-self:flex-start">Back to journal</a>
-    <div><h1>Trash</h1><p class="soft" style="margin-top:8px">Deleted entries stay here for ${TRASH_DAYS} days. Restoring one brings it back with its original date and edit history. After ${TRASH_DAYS} days it's permanently deleted.</p></div>
+  main.innerHTML = `${backBar("#journal", "Journal")}
+    <header class="titleblock"><h1>Trash</h1><p class="lede">${nums(`Deleted entries stay here for ${TRASH_DAYS} days. Restoring one brings it back with its original date and edit history. After ${TRASH_DAYS} days it's permanently deleted.`)}</p></header>
     ${takeFlash()}
-    ${gone ? note(`${gone === 1 ? "1 entry was" : `${gone} entries were`} in the trash for more than ${TRASH_DAYS} days and ${gone === 1 ? "has" : "have"} been permanently deleted.`) : ""}
-    ${list.length ? `<ul class="list">${list.map((e) => { const n = daysLeft(e); return `<li class="stack" style="gap:8px;padding:18px 0" data-id="${e.id}">
-      <p class="small soft">Written ${when(e.logged_at)} · Deleted ${short(e.deleted_at)} · ${n <= 1 ? "Permanently deleted within a day" : `${n} days left`}</p>
-      <p class="entry-title">${esc(e.title || "Untitled")}</p>${moodRow(e.moods)}${e.body ? `<p class="excerpt">${esc(e.body.slice(0, 160))}</p>` : ""}
-      <div class="row" style="gap:4px"><button class="btn secondary" data-act="restore">Restore</button><a class="btn quiet" href="#entry/${e.id}">View</a><button class="btn quiet" data-act="forever">Delete forever</button></div></li>`; }).join("")}</ul>
-    <details class="small"><summary>Testing tools</summary>
-      <div class="stack" style="margin-top:12px"><p>Pretend an entry was deleted some days ago. Anything in the trash for more than ${TRASH_DAYS} days is permanently deleted right away.</p>
+    ${gone ? note(nums(`${gone === 1 ? "1 entry was" : `${gone} entries were`} in the trash for more than ${TRASH_DAYS} days and ${gone === 1 ? "has" : "have"} been permanently deleted.`)) : ""}
+    ${list.length ? `<ul class="trashlist">${list.map((e) => { const n = daysLeft(e); return `<li data-id="${e.id}">${light(e.moods)}
+      <p class="entry-title">${esc(e.title || "Untitled")}</p>
+      <p class="hint"><span class="left">${n <= 1 ? "Permanently deleted within a day." : nums(`${n} days left.`)}</span> Moved here ${nums(short(e.deleted_at))}.</p>
+      <p class="hint">Written ${nums(when(e.logged_at))}</p>
+      ${moodRow(e.moods)}${e.body ? `<p class="excerpt">${esc(e.body.slice(0, 160))}</p>` : ""}
+      <div class="actions"><button class="btn secondary small" data-act="restore">Restore</button><a class="btn quiet" href="#entry/${e.id}">View</a><button class="btn quiet danger" data-act="forever">Delete forever</button></div></li>`; }).join("")}</ul>
+    <details class="tools"><summary>Testing tools</summary>
+      <div class="stack"><p class="hint">Pretend an entry was deleted some days ago. Anything in the trash for more than <span class="n">${TRASH_DAYS}</span> days is permanently deleted right away.</p>
         <label class="f">Entry<select id="agepick">${list.map((e) => `<option value="${e.id}">${esc(e.title || "Untitled")}, written ${esc(short(e.logged_at))}</option>`).join("")}</select></label>
-        <label class="f">Deleted how many days ago?<input type="number" id="agedays" min="0" max="365" value="31"></label>
-        <button class="btn secondary" id="age" style="align-self:flex-start">Change deleted date</button></div></details>`
-    : `<div><p style="font:500 24px var(--serif)">The trash is empty</p><p class="soft" style="margin-top:8px">Entries you move to the trash show up here.</p></div>`}`;
+        <label class="f">Deleted how many days ago?<input type="number" id="agedays" min="0" max="365" value="31" inputmode="numeric"></label>
+        <button class="btn secondary" id="age">Change deleted date</button></div></details>`
+    : `<div><p class="emptytitle">The trash is empty</p><p class="soft" style="margin-top:8px">Entries you move to the trash show up here.</p></div>`}`;
   $$("[data-act]").forEach((b) => b.onclick = () => {
     const e = db.entries.find((x) => x.id === b.closest("li").dataset.id);
-    if (b.dataset.act === "restore") { e.deleted_at = null; persist(); flash = note(`Restored. It's back on <a href="#journal/${dayOf(e)}">${longDay(dayOf(e))}</a>.`, true); return trash(); }
+    if (b.dataset.act === "restore") { e.deleted_at = null; persist(); flash = note(`Restored. It's back on <a href="#journal/${dayOf(e)}">${nums(longDay(dayOf(e)))}</a>.`, true); return trash(); }
     if (confirm("Permanently delete this entry, its photos and voice notes, and its edit history? This can't be undone.")) { removeEntries([e]); trash(); }
   });
   $("#age") && ($("#age").onclick = () => {
@@ -569,20 +1179,22 @@ function trash() {
 
 // ---------- voice recorder (MediaRecorder) ----------
 // A recording is added to the entry as soon as it stops, so it can't be left behind when the entry is saved.
-const TYPES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/ogg;codecs=opus"];
+// AAC (.m4a) first: it plays in Files, Messages and on Windows and Android, so voice notes in a backup open anywhere.
+const TYPES = ["audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"];
 function recorder(el, onSave, msg) {
   let stream, rec, started, tick, done;
-  const idle = () => { el.innerHTML = `<button class="btn secondary">Record a voice note</button><span class="sr" aria-live="polite" id="recsr"></span>`; el.firstChild.onclick = start; };
+  const idle = () => { el.innerHTML = `<button class="actionrow" type="button">${ICON.mic}<span>Record a voice note${ios ? `<span class="hint">Your iPhone asks for the microphone each time Glimmer opens.</span>` : ""}</span></button><span class="sr" aria-live="polite" id="recsr"></span>`; el.firstChild.onclick = start; };
   stopRecording = () => { clearInterval(tick); stream?.getTracks().forEach((t) => t.stop()); if (rec?.state === "recording") { rec.onstop = null; rec.stop(); } };
   finishRecording = () => rec?.state === "recording" ? new Promise((res) => { done = res; rec.stop(); }) : Promise.resolve();
   async function start() {
     msg("");
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) { msg("This browser can't record audio here. You can upload an audio file instead. (Recording needs https:// or a local file.)"); return; }
-    el.innerHTML = `<button class="btn secondary" disabled>Waiting for microphone…</button>`;
+    el.innerHTML = `<button class="actionrow" type="button" disabled>${ICON.mic}<span>Waiting for microphone…</span></button>`;
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
     catch (err) {
       idle();
-      msg(err.name === "NotAllowedError" ? "Glimmer can't use your microphone right now. You can allow it in your browser settings, or upload an audio file instead."
+      msg(err.name === "NotAllowedError" ? (ios ? "Glimmer can't use your microphone right now. Choose Allow when your iPhone asks. If it doesn't ask, swipe Glimmer away in the app switcher and open it again, or upload an audio file instead."
+          : "Glimmer can't use your microphone right now. You can allow it in your browser settings, or upload an audio file instead.")
         : err.name === "NotFoundError" ? "No microphone was found. You can upload an audio file instead."
         : "The microphone couldn't start. It may be in use by another app. You can upload an audio file instead.");
       return;
@@ -599,7 +1211,7 @@ function recorder(el, onSave, msg) {
       idle(); done?.(); done = null;
     };
     started = Date.now(); rec.start(1000);
-    el.innerHTML = `<div class="row"><span class="sr" aria-live="polite">Recording started</span><span><span class="rec-dot" aria-hidden="true"></span> <b>Recording</b> <span id="clock" style="font-variant-numeric:tabular-nums">0:00</span> <span class="small soft">of 5:00</span></span><button class="btn primary" id="rstop">Stop</button></div>`;
+    el.innerHTML = `<div class="rec"><span class="sr" aria-live="polite">Recording started</span><span class="rec-live"><span class="rec-dot" aria-hidden="true"></span><b>Recording</b> <span id="clock">0:00</span> <span class="hint">of <span class="n">5:00</span></span></span><button class="btn secondary small" id="rstop">Stop</button></div>`;
     $("#rstop", el).onclick = () => rec.stop();
     tick = setInterval(() => {
       const s = (Date.now() - started) / 1000; $("#clock", el).textContent = fmtDur(s);
@@ -620,24 +1232,23 @@ function mood() {
   [...db.moods].sort((a, b) => b.checked_in_at.localeCompare(a.checked_in_at))
     .forEach((c) => { const day = (byDay[toDay(new Date(c.checked_in_at))] ??= []), last = day.at(-1);
       if (last?.at === c.checked_in_at) last.ms.push(c.mood_key); else day.push({ at: c.checked_in_at, ms: [c.mood_key] }); });
-  main.innerHTML = `<h1>Mood</h1>${!db.moods.length ? `<div><p style="font:500 24px var(--serif)">No check-ins yet</p><p class="soft" style="margin-top:8px">You can check in from the <a href="#home">home page</a> whenever you like.</p></div>` : `
-    <figure class="stack" style="margin:0"><figcaption><h2>Your check-ins, last 30 days</h2></figcaption>
-      <ul class="bars">${counts.map(({ m, n }) => `<li><span><span aria-hidden="true">${m.emoji}</span> ${m.label}<span class="sr">, ${n} check-ins</span></span>
-        <span aria-hidden="true">${n ? `<span class="bar" style="width:${(n / max) * 80}%"></span>` : ""}<span class="num">${n}</span></span></li>`).join("")}</ul>
+  main.innerHTML = `<header class="pagehead"><h1>Mood</h1></header>${!db.moods.length ? `<div><p class="emptytitle">No check-ins yet</p><p class="soft" style="margin-top:8px">You can check in from the <a href="#home">home page</a> whenever you like.</p></div>` : `
+    <figure class="chart"><figcaption><h2>Your check-ins, last 30 days</h2></figcaption>
+      <ul class="bars">${counts.map(({ m, n }) => `<li><span class="bar-label"><span class="swatch" style="background:${css(m.rgb)}" aria-hidden="true"></span>${m.label}<span class="sr">, ${n} check-ins</span></span>
+        <span class="track" aria-hidden="true">${n ? `<span class="bar" style="--p:${css(m.rgb)};--n:${max <= 24 ? n : 1};--f:${n / max}"></span>` : ""}<span class="num">${n}</span></span></li>`).join("")}</ul>
       <details><summary>Show as a table</summary><table><tr><th>Mood</th><th>Check-ins</th></tr>${counts.map(({ m, n }) => `<tr><td>${m.label}</td><td>${n}</td></tr>`).join("")}</table></details>
     </figure>
-    <section class="stack"><h2>By day</h2>${Object.entries(byDay).map(([day, list]) => `<div><h3>${longDay(day)}</h3>
-      <ul style="list-style:none;padding:0;margin:8px 0 0">${list.map((c) => `<li style="display:flex;gap:16px"><span class="soft" style="width:5rem;flex:none;font-variant-numeric:tabular-nums">${time(c.at)}</span><span>${c.ms.map((k) => {
-        const m = MOODS.find((x) => x.key === k); return `<span aria-hidden="true">${m.emoji}</span> ${m.label}`; }).join(", ")}</span></li>`).join("")}</ul></div>`).join("")}
+    <section class="byday"><h2>By day</h2>${Object.entries(byDay).map(([day, list]) => `<div><h3>${nums(longDay(day))}</h3>
+      <ul>${list.map((c) => `<li><span class="t">${nums(time(c.at))}</span><span class="moodrow">${c.ms.map((k) => moodTag(MOODS.find((x) => x.key === k).label)).join("")}</span></li>`).join("")}</ul></div>`).join("")}
     </section>`}`;
 }
 
 // ---------- goals & worries ----------
 function followPicker(name) {
-  return `<fieldset><legend>When should Glimmer check in?</legend><div class="radios">
+  return `<fieldset><legend>When should Glimmer check in?</legend><div class="seg">
     ${[["tomorrow", "Tomorrow"], ["week", "In a week"], ["month", "In a month"], ["date", "Pick a date"]].map(([v, l]) =>
-      `<label><input type="radio" name="${name}" value="${v}" ${v === "week" ? "checked" : ""}> ${l}</label>`).join("")}</div>
-    <input type="date" data-pick="${name}" min="${today()}" hidden style="max-width:16rem;margin-top:8px" aria-label="Date"></fieldset>`;
+      `<label><input type="radio" name="${name}" value="${v}" ${v === "week" ? "checked" : ""}><span>${l}</span></label>`).join("")}</div>
+    <input type="date" data-pick="${name}" min="${today()}" hidden aria-label="Date"></fieldset>`;
 }
 function pickedDate(root, name) {
   const v = $(`input[name="${name}"]:checked`, root).value;
@@ -650,19 +1261,20 @@ function goals() {
   leaveGuard = null;
   const open = db.items.filter((i) => i.status !== "resolved").sort((a, b) => (a.follow_up_on ?? "").localeCompare(b.follow_up_on ?? ""));
   const resolved = db.items.filter((i) => i.status === "resolved");
-  const row = (i) => `<li class="stack" style="gap:8px;padding:18px 0" data-id="${i.id}"><p style="font:18px var(--serif)">${esc(i.text)}</p>
-    ${i.status !== "resolved" ? `<p class="small soft">${i.status === "postponed" ? "Postponed to" : "Next check-in:"} ${longDay(i.follow_up_on)}</p>` : ""}
-    <div class="row" style="gap:4px">${i.status !== "resolved" ? `<button class="btn quiet" data-act="edit">Edit</button><button class="btn quiet" data-act="postpone">Postpone</button><button class="btn quiet" data-act="resolve">Mark resolved</button>` : ""}
-    <button class="btn quiet" data-act="delete">Delete</button></div></li>`;
-  const section = (title, list) => list.length ? `<section><h2>${title}</h2><ul class="list" style="border-top:0">${list.map(row).join("")}</ul></section>` : "";
-  main.innerHTML = `<div><h1>Goals &amp; worries</h1><p class="soft" style="margin-top:8px">Glimmer checks in on the day you choose, right on your home page.</p></div>
-    <form class="panel stack" id="add"><h2>Add something</h2>
-      <fieldset><legend>Is it a goal or a worry?</legend><div class="radios"><label><input type="radio" name="kind" value="goal" checked> Goal</label><label><input type="radio" name="kind" value="worry"> Worry</label></div></fieldset>
+  // Resolve leads, Postpone and Edit stay plain, and Delete is a glyph at the far end so it's never next to Resolve.
+  const row = (i) => `<li data-id="${i.id}"><p class="item-text">${esc(i.text)}</p>
+    ${i.status !== "resolved" ? `<p class="hint">${i.status === "postponed" ? "Postponed to" : "Next check-in:"} ${nums(longDay(i.follow_up_on))}</p>` : ""}
+    <div class="actions">${i.status !== "resolved" ? `<button class="btn secondary small" data-act="resolve">${ICON.check}Resolve</button><button class="btn quiet" data-act="postpone">Postpone</button><button class="btn quiet" data-act="edit">Edit</button>` : ""}
+    <button class="iconbtn danger end" data-act="delete" aria-label="Delete">${ICON.trash}</button></div></li>`;
+  const section = (title, list) => list.length ? `<section><h2>${title}</h2><ul class="items">${list.map(row).join("")}</ul></section>` : "";
+  main.innerHTML = `<header class="titleblock"><h1>Goals &amp; worries</h1><p class="lede">Glimmer checks in on the day you choose, right on your home page.</p></header>
+    <form class="addform" id="add"><h2>Add something</h2>
+      <fieldset><legend>Is it a goal or a worry?</legend><div class="seg"><label><input type="radio" name="kind" value="goal" checked><span>Goal</span></label><label><input type="radio" name="kind" value="worry"><span>Worry</span></label></div></fieldset>
       <label class="f">What is it?<textarea class="in" name="text" rows="2" maxlength="500" required></textarea></label>
-      ${followPicker("add-fu")}<div id="addmsg"></div><button class="btn primary" style="align-self:flex-start">Add to my list</button></form>
-    ${db.items.length ? "" : `<div><p style="font:500 24px var(--serif)">Nothing on your list yet</p><p class="soft" style="margin-top:8px">Add a goal you're working toward or a worry you'd like to check in on later.</p></div>`}
+      ${followPicker("add-fu")}<div id="addmsg"></div><button class="btn primary">Add to my list</button></form>
+    ${db.items.length ? "" : `<div><p class="emptytitle">Nothing on your list yet</p><p class="soft" style="margin-top:8px">Add a goal you're working toward or a worry you'd like to check in on later.</p></div>`}
     ${section("Goals", open.filter((i) => i.kind === "goal"))}${section("Worries", open.filter((i) => i.kind === "worry"))}
-    ${resolved.length ? `<details><summary><b>Resolved (${resolved.length})</b></summary><ul class="list" style="border-top:0">${resolved.map(row).join("")}</ul></details>` : ""}`;
+    ${resolved.length ? `<details class="resolved"><summary><span>Resolved (<span class="n">${resolved.length}</span>)</span></summary><ul class="items">${resolved.map(row).join("")}</ul></details>` : ""}`;
   const form = $("#add"); wirePicker(form, "add-fu");
   form.onsubmit = (e) => {
     e.preventDefault();
@@ -677,8 +1289,8 @@ function goals() {
     if (act === "resolve") { item.status = "resolved"; persist(); return goals(); }
     if (act === "delete") { if (confirm("Delete this item? This can't be undone.")) { db.items = db.items.filter((i) => i !== item); db.responses = db.responses.filter((r) => r.item_id !== item.id); persist(); goals(); } return; }
     const name = "fu-" + item.id;
-    li.innerHTML = `${act === "edit" ? `<label class="f">What is it?<textarea class="in" rows="2" maxlength="500">${esc(item.text)}</textarea></label>` : `<p style="font:18px var(--serif)">${esc(item.text)}</p>`}
-      ${followPicker(name)}<div class="row"><button class="btn primary" data-save>${act === "edit" ? "Save changes" : "Postpone"}</button><button class="btn quiet" data-cancel>Cancel</button></div>`;
+    li.innerHTML = `${act === "edit" ? `<label class="f">What is it?<textarea class="in" rows="2" maxlength="500">${esc(item.text)}</textarea></label>` : `<p class="item-text">${esc(item.text)}</p>`}
+      ${followPicker(name)}<div class="actions"><button class="btn secondary small" data-save>${act === "edit" ? "Save changes" : "Postpone"}</button><button class="btn quiet" data-cancel>Cancel</button></div>`;
     wirePicker(li, name);
     $("[data-cancel]", li).onclick = goals;
     $("[data-save]", li).onclick = () => {
@@ -690,28 +1302,255 @@ function goals() {
 }
 
 // ---------- settings ----------
+const busy = (text) => `<p class="hint" role="status">${text}</p>`; // work in progress; the text always ends with "…"
+const lastBackup = () => isIso(ui.lastBackup) ? nums(`Last backup: ${when(ui.lastBackup)}.`) : "No backup yet.";
+// Storage in plain words: how much Glimmer uses, and whether the browser has promised to keep it.
+const fmtSize = (b) => b < 1e6 ? "less than 1 MB" : b < 1e9 ? `${(b / 1e6).toFixed(b < 1e7 ? 1 : 0)} MB` : `${(b / 1e9).toFixed(1)} GB`;
+async function storageText() {
+  const s = navigator.storage;
+  const [est, kept] = await Promise.all([s?.estimate?.().catch(() => null), s?.persisted?.().catch(() => false)]);
+  const used = Number.isFinite(est?.usage) ? `Glimmer is using ${fmtSize(est.usage)} on this device. ` : "";
+  return nums(used + (kept ? "Your journal is protected from automatic clearing."
+    : `The browser may clear your journal if the phone runs low on space${installed ? ", so keep a recent backup."
+      : `; installing Glimmer ${ios ? "to your Home Screen" : "as an app"} protects it.`}`));
+}
 function settings() {
   leaveGuard = null;
-  main.innerHTML = `<h1>Settings</h1>
-    <section class="stack"><h2>Download your data</h2><p>A JSON file with your entries, mood check-ins, goals and worries, and follow-up notes. Photos and voice notes stay in the browser.</p>
-      <button class="btn secondary" id="dl" style="align-self:flex-start">Download my data</button></section>
-    <section class="stack" style="border-top:1px solid var(--hairline);padding-top:40px"><h2>Delete everything</h2>
-      <p>This removes all of your entries, photos, voice notes, mood check-ins, goals and worries from this browser. It can't be undone.</p>
-      <label class="f">Type "delete my data" to confirm<input type="text" id="confirm" autocomplete="off"></label>
-      <button class="btn secondary" id="wipe" disabled style="align-self:flex-start">Delete my data</button></section>`;
-  $("#dl").onclick = () => {
-    const data = { exported_at: new Date().toISOString(), entries: db.entries.map((e) => ({ ...e, media: db.media.filter((m) => m.entry_id === e.id) })),
-      mood_checkins: db.moods, goals_worries: db.items.map((i) => ({ ...i, follow_up_responses: db.responses.filter((r) => r.item_id === i.id) })) };
-    const a = Object.assign(document.createElement("a"), { href: objectUrl(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })), download: `glimmer-data-${today()}.json` });
-    a.click();
+  let updated = false; // set just before Check for updates reloads the page
+  try { updated = !!sessionStorage.getItem("glimmer-updated"); sessionStorage.removeItem("glimmer-updated"); } catch {}
+  const backup = `<section class="settings-block" aria-labelledby="bkh"><h2 id="bkh">Back up your journal</h2>
+      <p>A backup is one file with your entries, photos, voice notes, mood check-ins, goals and worries. Keep it somewhere safe, like Files or iCloud Drive.</p>
+      <p class="hint" id="lastbackup">${lastBackup()}</p><button class="btn secondary" id="dl">Save a backup</button><div id="dlmsg" aria-live="polite"></div></section>`;
+  const restore = `<section class="settings-block" aria-labelledby="rsh"><h2 id="rsh">Restore from a backup</h2>
+      <p>Adds anything in the backup that isn't here yet. Nothing you have now is removed or changed.</p>
+      <label class="btn secondary filebtn">Choose a backup file<input type="file" id="restorefile" accept=".zip,.json,application/zip,application/json"></label>
+      <div id="restoremsg" aria-live="polite"></div></section>`;
+  // With nothing to back up yet (a new install, or after Delete everything), restoring comes first.
+  main.innerHTML = `${backBar("#home", "Home")}<h1>Settings</h1>
+    <section class="settings-block keep"><h2>Your journal stays on this device</h2><p>Glimmer saves your entries, photos, voice notes, check-ins, goals and worries in ${here} on this device. Nothing is sent to a server, and there's no account.</p>
+      <p class="hint" id="storage"></p></section>
+    ${canInstall ? `<section class="settings-block" aria-labelledby="ish"><h2 id="ish">Add Glimmer to your Home Screen</h2>${installSteps("below")}</section>` : ""}
+    ${journalEmpty() ? restore + backup : backup + restore}
+    <section class="settings-block" aria-labelledby="uph"><h2 id="uph">Updates</h2><p>Glimmer updates itself when you're online. If something seems out of date, you can check now.</p>
+      <button class="btn secondary" id="update">Check for updates</button><div id="updatemsg" aria-live="polite">${updated ? note("You have the newest version of Glimmer.", true) : ""}</div></section>
+    <section class="settings-block"><h2>Delete everything</h2>
+      <p>This removes all of your entries, photos, voice notes, mood check-ins, goals and worries from ${here}. It can't be undone, so save a backup first if you might want them back.</p>
+      <label class="f">Type "delete my data" to confirm<input type="text" id="confirm" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+      <button class="btn secondary danger" id="wipe" disabled>Delete my data</button></section>`;
+  // Kept as elements, so work that finishes after you've left Settings lands nowhere instead of failing.
+  const [storage, last, dl, dlmsg, file, restoremsg, update, updatemsg] = ["#storage", "#lastbackup", "#dl", "#dlmsg", "#restorefile", "#restoremsg", "#update", "#updatemsg"].map((s) => $(s));
+  const showStorage = () => storageText().then((t) => storage.innerHTML = t);
+  showStorage();
+  // Messages appear under their button, which can be low on the screen, so bring each one above the tab bar.
+  const say = (el, html) => { el.innerHTML = html; if (html && el.isConnected) el.scrollIntoView({ block: "nearest" }); };
+
+  const offer = async (f) => {
+    const how = await offerFile(f);
+    if (how === "retry") { // iPhone only opens the share sheet right after a tap, and making the file took longer than that
+      say(dlmsg, `<div class="notice ok" role="status"><p>Your backup is ready.</p><button class="btn primary small" id="dlagain">Save the backup file</button></div>`);
+      $("#dlagain", dlmsg).onclick = () => offer(f);
+    } else if (how === "cancelled") say(dlmsg, "");
+    else {
+      setUi({ lastBackup: new Date().toISOString() }); last.innerHTML = lastBackup();
+      say(dlmsg, note(`${how === "shared" ? "Backup saved" : "Backup downloaded"}: <span class="file">${nums(f.name)}</span>.`, true));
+    }
+  };
+  dl.onclick = async () => {
+    dl.disabled = true; say(dlmsg, busy("Preparing your backup…"));
+    try { await offer(await makeBackup()); }
+    catch { say(dlmsg, note(`The backup couldn't be made. Try again, and if it keeps failing, ${installed ? "close Glimmer and open it again" : "reload the page"}.`)); }
+    dl.disabled = false;
+  };
+  file.onchange = async () => {
+    const f = file.files[0]; file.value = ""; if (!f) return;
+    say(restoremsg, busy("Restoring…"));
+    try { say(restoremsg, note(nums(await restoreBackup(f)), true)); showStorage(); }
+    catch (err) { say(restoremsg, note(esc(err.message))); }
+  };
+  // Checks for a new version of the app's files, then reloads. The page itself always comes fresh when you're online.
+  update.onclick = async () => {
+    if (!navigator.onLine) { say(updatemsg, note("You're offline, so Glimmer can't check right now. It checks on its own once you're back online.")); return; }
+    update.disabled = true; say(updatemsg, busy("Checking for updates…"));
+    try {
+      const reg = await sw; await reg?.update();
+      const next = reg?.installing; // a new version saves its files, then takes over by itself
+      if (next) await new Promise((done) => { const over = () => /activated|redundant/.test(next.state) && done(); next.onstatechange = over; over(); setTimeout(done, 10000); });
+    } catch { update.disabled = false; say(updatemsg, note("Glimmer couldn't reach the internet to check. Try again in a moment.")); return; }
+    say(updatemsg, busy("Opening the newest version…"));
+    try { sessionStorage.setItem("glimmer-updated", "1"); } catch {}
+    location.reload();
   };
   $("#confirm").oninput = (e) => $("#wipe").disabled = e.target.value.trim().toLowerCase() !== "delete my data";
   $("#wipe").onclick = async () => {
-    for (const m of db.media) await delFile(m.id).catch(() => {});
-    localStorage.removeItem(KEY); Object.assign(db, { entries: [], media: [], moods: [], items: [], responses: [] });
-    main.innerHTML = `<p class="notice ok">Everything has been deleted from this browser.</p><a href="#home">Go home</a>`;
+    await fileOp("readwrite", (s) => s.clear()).catch(() => {}); // every photo and voice note, even ones a failed save left behind
+    localStorage.removeItem(KEY); localStorage.removeItem(DRAFT_KEY); // never localStorage.clear(): other projects share this address
+    Object.assign(db, { entries: [], media: [], moods: [], items: [], responses: [] });
+    main.innerHTML = `<p class="notice ok">Everything has been deleted from ${here}. Backup files you saved aren't affected.</p><a class="btn secondary" href="#home" style="align-self:flex-start">Go home</a>`;
   };
 }
+
+// ---------- backup files: a plain .zip (stored, not compressed) that holds data.json and the media ----------
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = (u8) => { let c = 0xffffffff; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+// files: [{ name, blob }]. Blob parts reference the originals, so big photo libraries aren't copied into one huge string.
+async function makeZip(files) {
+  const enc = new TextEncoder(), parts = [], central = [], d = new Date();
+  const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  let offset = 0;
+  for (const { name, blob } of files) {
+    const n = enc.encode(name), size = blob.size, crc = crc32(new Uint8Array(await blob.arrayBuffer()));
+    const h = new DataView(new ArrayBuffer(30)), c = new DataView(new ArrayBuffer(46));
+    [[0, 0x04034b50, 4], [4, 20, 2], [6, 0x0800, 2], [10, dosTime, 2], [12, dosDate, 2], [14, crc, 4], [18, size, 4], [22, size, 4], [26, n.length, 2]].forEach(([o, v, w]) => w === 4 ? h.setUint32(o, v, true) : h.setUint16(o, v, true));
+    [[0, 0x02014b50, 4], [4, 20, 2], [6, 20, 2], [8, 0x0800, 2], [12, dosTime, 2], [14, dosDate, 2], [16, crc, 4], [20, size, 4], [24, size, 4], [28, n.length, 2], [42, offset, 4]].forEach(([o, v, w]) => w === 4 ? c.setUint32(o, v, true) : c.setUint16(o, v, true));
+    parts.push(h.buffer, n, blob); central.push(c.buffer, n);
+    offset += 30 + n.length + size;
+  }
+  const cdSize = central.reduce((t, p) => t + p.byteLength, 0), end = new DataView(new ArrayBuffer(22));
+  [[0, 0x06054b50, 4], [8, files.length, 2], [10, files.length, 2], [12, cdSize, 4], [16, offset, 4]].forEach(([o, v, w]) => w === 4 ? end.setUint32(o, v, true) : end.setUint16(o, v, true));
+  return new Blob([...parts, ...central, end.buffer], { type: "application/zip" });
+}
+// Returns a Map of file name -> Blob. Reads stored entries, and compressed ones where the browser can inflate them.
+async function readZip(file) {
+  const tailStart = Math.max(0, file.size - 65557), tail = new DataView(await file.slice(tailStart).arrayBuffer());
+  let e = -1;
+  for (let i = tail.byteLength - 22; i >= 0; i--) if (tail.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error("not a zip");
+  const count = tail.getUint16(e + 10, true), cdSize = tail.getUint32(e + 12, true), cdOff = tail.getUint32(e + 16, true);
+  const cd = new DataView(await file.slice(cdOff, cdOff + cdSize).arrayBuffer()), dec = new TextDecoder(), out = new Map();
+  for (let i = 0, p = 0; i < count; i++) {
+    if (p + 46 > cd.byteLength || cd.getUint32(p, true) !== 0x02014b50) throw new Error("damaged zip");
+    const method = cd.getUint16(p + 10, true), csize = cd.getUint32(p + 20, true), nlen = cd.getUint16(p + 28, true), skip = cd.getUint16(p + 30, true) + cd.getUint16(p + 32, true), off = cd.getUint32(p + 42, true);
+    const name = dec.decode(new Uint8Array(cd.buffer, cd.byteOffset + p + 46, nlen));
+    p += 46 + nlen + skip;
+    if (name.endsWith("/")) continue;
+    const lh = new DataView(await file.slice(off, off + 30).arrayBuffer()), start = off + 30 + lh.getUint16(26, true) + lh.getUint16(28, true);
+    let blob = file.slice(start, start + csize);
+    if (method === 8) {
+      if (!window.DecompressionStream) throw new Error("compressed zip");
+      blob = await new Response(blob.stream().pipeThrough(new DecompressionStream("deflate-raw"))).blob();
+    } else if (method !== 0) throw new Error("compressed zip");
+    out.set(name, blob);
+  }
+  return out;
+}
+
+// ---------- backup and restore ----------
+// A backup is one .zip file: data.json (the same shape as the old "Download my data" export) plus media/<id>.<ext>
+// for every photo and voice note. Restoring adds what isn't already here and never removes or changes anything.
+const EXT = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "audio/mp4": "m4a", "audio/x-m4a": "m4a", "audio/aac": "aac",
+  "audio/mpeg": "mp3", "audio/wav": "wav", "audio/x-wav": "wav", "audio/ogg": "ogg", "audio/webm": "webm" };
+const exportData = () => ({ app: "Glimmer", backup_version: 1, exported_at: new Date().toISOString(),
+  entries: db.entries.map((e) => ({ ...e, media: db.media.filter((m) => m.entry_id === e.id) })),
+  mood_checkins: db.moods, goals_worries: db.items.map((i) => ({ ...i, follow_up_responses: db.responses.filter((r) => r.item_id === i.id) })) });
+
+async function makeBackup() {
+  const files = [{ name: "data.json", blob: new Blob([JSON.stringify(exportData(), null, 2)], { type: "application/json" }) }];
+  for (const m of db.media) {
+    const blob = await getFile(m.id).catch(() => null);
+    if (blob) files.push({ name: `media/${m.id}.${EXT[m.mime_type] ?? "bin"}`, blob });
+  }
+  return new File([await makeZip(files)], `glimmer-backup-${today()}.zip`, { type: "application/zip" });
+}
+
+// Phones get the share sheet (Save to Files, AirDrop); everything else downloads the file.
+// Returns "shared", "downloaded", "cancelled", or "retry" when the tap expired while the file was being prepared.
+async function offerFile(file) {
+  if (navigator.canShare?.({ files: [file] }) && matchMedia("(pointer: coarse)").matches) {
+    try { await navigator.share({ files: [file] }); return "shared"; }
+    catch (e) { if (e.name === "AbortError") return "cancelled"; if (e.name === "NotAllowedError") return "retry"; }
+  }
+  const a = Object.assign(document.createElement("a"), { href: objectUrl(file), download: file.name });
+  document.body.append(a); a.click(); a.remove();
+  return "downloaded";
+}
+
+const BAD_FILE = "This file isn't a Glimmer backup. Choose the .zip file from Save a backup, or a .json file from an older export.";
+const isIso = (s) => typeof s === "string" && !Number.isNaN(Date.parse(s));
+const clip = (s, max) => (typeof s === "string" ? s.slice(0, max) : null);
+const moodList = (a) => (Array.isArray(a) ? [...new Set(a.filter((x) => typeof x === "string").map(cleanMood).filter(Boolean))] : []);
+const snapshot = (s) => s && typeof s === "object" ? { title: clip(s.title, 200) || null, body: clip(s.body, 100000) ?? "", moods: moodList(s.moods),
+  media: Array.isArray(s.media) ? s.media.filter((m) => typeof m?.id === "string").map((m) => ({ id: m.id, kind: m.kind === "voice" ? "voice" : "photo" })) : [] } : null;
+
+async function restoreBackup(file) {
+  let data, files = new Map();
+  try {
+    // A zip starts with "PK", which still works when a file has lost its name or type (renamed, or from a cloud app).
+    if (/\.zip$/i.test(file.name) || /zip/.test(file.type) || (await file.slice(0, 2).text()) === "PK") {
+      // Accept a backup that was unzipped and zipped again (names inside one folder); skip macOS extras.
+      for (const [name, blob] of await readZip(file)) if (!name.startsWith("__MACOSX/")) files.set(name.replace(/^[^/]+\/(?=data\.json$|media\/)/, ""), blob);
+      if (!files.has("data.json")) throw new Error(BAD_FILE);
+      data = JSON.parse(await files.get("data.json").text());
+    } else data = JSON.parse(await file.text());
+  } catch (e) { throw new Error(e.message === BAD_FILE ? BAD_FILE : e.message === "compressed zip" ? "This zip was compressed by another app. Unzip it and choose the data.json file inside, or use the original backup file." : "This file is damaged or isn't a Glimmer backup, so nothing was restored."); }
+  if (!data || typeof data !== "object" || !["entries", "mood_checkins", "goals_worries"].some((k) => Array.isArray(data[k]))) throw new Error(BAD_FILE);
+
+  const media = new Map(); // media id -> file in the zip
+  for (const [name, blob] of files) { const m = name.match(/^media\/([^/]+)\.[a-z0-9]+$/i); if (m) media.set(m[1], blob); }
+  const n = { entries: 0, media: 0, moods: 0, items: 0, skipped: 0, failed: 0 };
+  const entryIds = new Set(db.entries.map((e) => e.id)), mediaIds = new Set(db.media.map((m) => m.id));
+  for (const e of Array.isArray(data.entries) ? data.entries : []) {
+    if (typeof e?.id !== "string" || !isIso(e.logged_at)) continue;
+    if (entryIds.has(e.id)) n.skipped++;
+    else {
+      db.entries.push({ id: e.id, logged_at: e.logged_at, created_at: isIso(e.created_at) ? e.created_at : e.logged_at, updated_at: isIso(e.updated_at) ? e.updated_at : e.logged_at,
+        title: clip(e.title, 200) || null, body: clip(e.body, 100000) ?? "", moods: moodList(e.moods),
+        history: (Array.isArray(e.history) ? e.history : []).filter((h) => isIso(h?.edited_at) && snapshot(h.before) && snapshot(h.after))
+          .map((h) => ({ edited_at: h.edited_at, before: snapshot(h.before), after: snapshot(h.after) })),
+        deleted_at: isIso(e.deleted_at) ? e.deleted_at : null });
+      entryIds.add(e.id); n.entries++;
+    }
+    // Photos and voice notes come back even for entries that are already here (e.g. after restoring an older text-only export).
+    for (const m of Array.isArray(e.media) ? e.media : []) {
+      if (typeof m?.id !== "string" || mediaIds.has(m.id) || !media.has(m.id)) continue;
+      const type = typeof m.mime_type === "string" && /^(image|audio)\//.test(m.mime_type) ? m.mime_type : media.get(m.id).type;
+      const blob = media.get(m.id).slice(0, media.get(m.id).size, type);
+      try { await putFile(m.id, blob); } catch { n.failed++; continue; }
+      db.media.push({ id: m.id, entry_id: e.id, kind: m.kind === "voice" ? "voice" : "photo", mime_type: type, size_bytes: blob.size,
+        duration_seconds: Number.isFinite(m.duration_seconds) ? m.duration_seconds : null, created_at: isIso(m.created_at) ? m.created_at : new Date().toISOString() });
+      mediaIds.add(m.id); n.media++;
+    }
+  }
+  const moodIds = new Set(db.moods.map((c) => c.id)), keys = new Set(MOODS.map((m) => m.key));
+  for (const c of Array.isArray(data.mood_checkins) ? data.mood_checkins : []) {
+    if (typeof c?.id !== "string" || !keys.has(c.mood_key) || !isIso(c.checked_in_at)) continue;
+    if (moodIds.has(c.id)) { n.skipped++; continue; }
+    db.moods.push({ id: c.id, mood_key: c.mood_key, checked_in_at: c.checked_in_at }); moodIds.add(c.id); n.moods++;
+  }
+  const itemIds = new Set(db.items.map((i) => i.id)), responseIds = new Set(db.responses.map((r) => r.id));
+  for (const i of Array.isArray(data.goals_worries) ? data.goals_worries : []) {
+    if (typeof i?.id !== "string" || !["goal", "worry"].includes(i.kind) || typeof i.text !== "string" || !i.text.trim()) continue;
+    if (itemIds.has(i.id)) { n.skipped++; continue; }
+    db.items.push({ id: i.id, kind: i.kind, text: i.text.trim().slice(0, 500), status: ["active", "postponed", "resolved"].includes(i.status) ? i.status : "active",
+      follow_up_on: isDay(i.follow_up_on) ? i.follow_up_on : addDays(today(), 7), created_at: isIso(i.created_at) ? i.created_at : new Date().toISOString() });
+    itemIds.add(i.id); n.items++;
+    for (const r of Array.isArray(i.follow_up_responses) ? i.follow_up_responses : []) {
+      if (typeof r?.id !== "string" || responseIds.has(r.id)) continue;
+      db.responses.push({ id: r.id, item_id: i.id, response: ["still_on_my_mind", "better", "done"].includes(r.response) ? r.response : "better",
+        note: clip(r.note, 1000), created_at: isIso(r.created_at) ? r.created_at : new Date().toISOString() });
+      responseIds.add(r.id);
+    }
+  }
+  persist();
+  const parts = [[n.entries, "entry", "entries"], [n.media, "photo or voice note", "photos and voice notes"], [n.moods, "mood check-in", "mood check-ins"], [n.items, "goal or worry", "goals and worries"]]
+    .filter(([c]) => c).map(([c, one, many]) => `${c} ${c === 1 ? one : many}`);
+  return (parts.length ? `Backup restored: ${and(parts)}.` : "Everything in this backup is already here, so nothing was added.")
+    + (parts.length && n.skipped ? ` ${n.skipped === 1 ? "1 item was" : `${n.skipped} items were`} already here and stayed as they are.` : "")
+    + (n.failed ? ` ${n.failed === 1 ? "1 photo or voice note" : `${n.failed} photos and voice notes`} couldn't be saved; this device may be out of space.` : "");
+}
+
+// ---------- the app on the phone ----------
+// Keeps the app's own files on the device so it opens offline (service workers need https:// or localhost).
+const sw = "serviceWorker" in navigator && location.protocol !== "file:"
+  ? navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(() => null) : Promise.resolve(null);
+// An installed iPhone app is usually resumed rather than reopened, so the browser's own check for a new version
+// (which comes with opening a page) rarely runs. Check when Glimmer comes back on screen, at most once an hour.
+let checkedAt = Date.now();
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "visible" || Date.now() - checkedAt < 36e5) return;
+  checkedAt = Date.now(); sw.then((reg) => reg?.update()).catch(() => {});
+});
+// The installed app asks the browser to keep its storage on every launch until it agrees.
+if (installed) navigator.storage?.persisted?.().then((kept) => kept || navigator.storage.persist()).catch(() => {});
 
 route();
 </script>

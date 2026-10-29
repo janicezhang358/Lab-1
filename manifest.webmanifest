@@ -1,15 +1,16 @@
 {
+  "id": "/Lab-1/testapp1.html",
   "name": "Glimmer",
   "short_name": "Glimmer",
   "description": "A private journal for moods, entries, goals and worries.",
   "start_url": "./testapp1.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f6f1f3",
-  "theme_color": "#f6f1f3",
+  "background_color": "#1d1420",
+  "theme_color": "#1d1420",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
